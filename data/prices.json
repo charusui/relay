@@ -1,0 +1,14 @@
+{
+  "_readme": "Paid list prices in USD per million tokens, used only to report what a run WOULD cost on a paid plan. Relay runs on free tiers, so actual spend is $0. Fill in a model only from the provider's official pricing page and record the date. Leave a model out rather than guess.",
+  "checked": "2026-11-14",
+  "sources": {
+    "anthropic": "https://www.anthropic.com/pricing",
+    "gemini": "https://ai.google.dev/gemini-api/docs/pricing",
+    "groq": "https://groq.com/pricing"
+  },
+  "models": {
+    "claude-haiku-5-5": { "input": 0.10, "output": 0.50, "cachedInput": 0.01 },
+    "claude-sonnet-5-5": { "input": 2.00, "output": 10.00, "cachedInput": 0.10 },
+    "claude-opus-5-5": { "input": 4.00, "output": 20.00, "cachedInput": 0.20 }
+  }
+}
