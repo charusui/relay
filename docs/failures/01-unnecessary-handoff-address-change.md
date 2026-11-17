@@ -59,4 +59,6 @@ Paired flips: B fixed `ambig-01` and "broke" `happy-06`. With one run each, net 
 - The fix is real and reliable on the failure it targets.
 - `happy-06` fails in **both** versions, when the agent leaves out the refund amount. With the release-check run added, it fails in 4/5 runs of B and 1/4 of A. Not settled at this sample size, but B may make it more likely, so it is recorded as a possible side effect and is the next fix to test.
 
+**Follow-up (2026-11-15):** the possible side effect was fixed in [A/B 02](../results/ab-02-state-tool-outcome.md). One prompt line makes the agent state the outcome in the tool's own terms; `happy-06` now passes 4/4, and every return reply states the refund amount (12/12).
+
 **Decision: keep B.** Its trade-off is stated openly: about 6% more tokens per conversation, from one extra policy search. Handing a self-serve request to a person costs far more than 271 tokens. The case-study rule ("ship only if it beats A without making another metric worse") is honoured on every quality metric. The token cost is the one deliberate exception, and it is recorded here and in PLAN.md.

@@ -5,15 +5,14 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fromRoot } from '../paths.ts';
 
 /** Bump when retrieval behaviour changes, so eval runs on different retrieval are never compared silently. */
 export const RETRIEVAL_VERSION = 'bm25-stem-v2'; // v1 = original stemmer (before failure 04)
 
 export type PolicyPassage = { id: string; doc: string; section: string; text: string };
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const POLICY_DIR = path.resolve(here, '../../data/policies');
+const POLICY_DIR = fromRoot('data', 'policies');
 
 const STOP = new Set(
   'a an and are as at be by can do does for from has have how i if in is it its my of on or our that the this to was we what when where which will with you your me can\'t cannot'.split(' '),

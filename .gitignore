@@ -3,3 +3,9 @@ node_modules/
 .data/
 reports/*
 !reports/.gitkeep
+.next
+next-env.d.ts
+.vercel
+.env*
+!.env.example
+*.tsbuildinfo

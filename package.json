@@ -21,15 +21,28 @@
     "rejudge": "tsx src/eval/rejudge.ts",
     "rescore": "tsx src/eval/rescore.ts",
     "test": "tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.next.json",
+    "dev": "next dev -p 3200",
+    "build": "next build",
+    "start": "next start -p 3200",
+    "synthetic": "tsx src/cli/synthetic.ts",
+    "dev:preview": "node scripts/dev-preview.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
     "@electric-sql/pglite": "^0.5.16",
+    "next": "16.4.3",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite-socket": "0.2.19",
     "@types/node": "^26.6.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "tsx": "^4.23.15",
     "twilio": "^6.3.0",
     "typescript": "^7.0.2"

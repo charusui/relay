@@ -20,7 +20,7 @@ export type Variant = {
 };
 
 /** The variant that chat, evals and A/B use unless told otherwise. Changed only by an A/B decision (see PLAN.md). */
-export const DEFAULT_VARIANT = 'state-tool-outcome'; // 2026-11-15, A/B 02 (docs/results/ab-02-state-tool-outcome.md); before: policy-before-handoff (A/B 01)
+export const DEFAULT_VARIANT = 'no-gap-filling-v3'; // 2026-11-15, A/B 03 (docs/results/ab-03-no-gap-filling.md); before: state-tool-outcome (A/B 02), policy-before-handoff (A/B 01)
 
 export const variants: Record<string, Variant> = {
   baseline: {
@@ -61,6 +61,14 @@ export const variants: Record<string, Variant> = {
     id: "no-gap-filling-v2",
     description: "no-gap-filling with the lost/late line reworded: include the estimated delivery date; no \"and nothing more\"",
     prompt: "no-gap-filling-v2",
+    policyMode: "tool",
+  },
+  // v2's dev pilot (20261115T1327-no-gap-filling-v2-gemini-dev-ed01): happy-13 said "not considered lost yet" in 1 of 3 runs.
+  // One change: say plainly not to comment on lost-or-not at all, with the phrasings the model used.
+  "no-gap-filling-v3": {
+    id: "no-gap-filling-v3",
+    description: "no-gap-filling-v2 with the lost/late line made explicit: no lost-or-not statement at all",
+    prompt: "no-gap-filling-v3",
     policyMode: "tool",
   },
   // Planned experiment (PLAN.md 4.9): is retrieval worth it at this size?

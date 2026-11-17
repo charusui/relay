@@ -3,13 +3,11 @@
 // has a paid list price in data/prices.json, what the run would cost if paid.
 
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fromRoot } from '../paths.ts';
 
 type Price = { input: number; output: number; cachedInput?: number };
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const table = JSON.parse(readFileSync(path.resolve(here, '../../data/prices.json'), 'utf8')) as {
+const table = JSON.parse(readFileSync(fromRoot('data', 'prices.json'), 'utf8')) as {
   checked: string;
   models: Record<string, Price>;
 };

@@ -53,3 +53,17 @@ export function escalationAlertFromEnv() {
   const url = process.env.SLACK_WEBHOOK_URL?.trim();
   return url ? slackEscalationAlert(url) : undefined;
 }
+
+/** Plain-text Slack poster for monitoring alerts. Throws on failure (the alert is still recorded). */
+export function slackTextNotifier(webhookUrl: string) {
+  return async (text: string) => {
+    const res = await fetch(webhookUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
+    if (!res.ok) throw new Error(`Slack webhook returned HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  };
+}
+
+/** Monitoring-alert notifier from the environment, or undefined when SLACK_WEBHOOK_URL is not set. */
+export function monitoringNotifierFromEnv() {
+  const url = process.env.SLACK_WEBHOOK_URL?.trim();
+  return url ? slackTextNotifier(url) : undefined;
+}

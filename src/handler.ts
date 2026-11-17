@@ -9,7 +9,7 @@ import type { ModelClient } from './agent/model.ts';
 import { paidEquivalentUsd, type TokenUsage, zeroUsage } from './agent/pricing.ts';
 import { newState, type Channel, type ConversationState, type EscalationReason, type ToolContext } from './agent/tools.ts';
 import { buildSystemPrompt, toolsFor, type Variant } from './agent/variants.ts';
-import type { ConversationRow, RelayDb } from './db/db.ts';
+import type { ConversationRow, RelayDb, Traffic } from './db/db.ts';
 import type { StoreAdapter } from './store/store.ts';
 import { REFUND_APPROVAL_THRESHOLD } from './config.ts';
 
@@ -22,6 +22,8 @@ export type InboundMessage = {
   conversationId?: string;
   evalRunId?: string;
   evalCaseId?: string;
+  /** live (default), synthetic (scheduled scripted check) or demo. Monitoring keeps them apart. */
+  traffic?: Traffic;
 };
 
 export type Escalation = { reason: EscalationReason; summary: string; source: 'agent' | 'code'; ticketId: string };
@@ -89,7 +91,7 @@ export async function handleInbound(deps: HandlerDeps, msg: InboundMessage): Pro
 
   const conv =
     (msg.conversationId && (await db.getConversation(msg.conversationId))) ||
-    (!msg.evalRunId && (await db.findOpenConversation(msg.channel, msg.from))) ||
+    (!msg.evalRunId && (await db.findOpenConversation(msg.channel, msg.from, msg.traffic ?? 'live'))) ||
     (await db.createConversation({
       channel: msg.channel,
       contact: msg.from,
@@ -98,6 +100,7 @@ export async function handleInbound(deps: HandlerDeps, msg: InboundMessage): Pro
       state: newState(),
       evalRunId: msg.evalRunId,
       evalCaseId: msg.evalCaseId,
+      traffic: msg.traffic,
     }));
 
   await db.addMessage(conv.id, 'customer', msg.subject ? `[${msg.subject}] ${msg.text}` : msg.text);

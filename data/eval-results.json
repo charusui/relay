@@ -1,0 +1,330 @@
+{
+  "$comment": "Curated for the dashboard's Evals page. Every number is copied from the committed report named in its 'source' (docs/results/*). test/eval-results.test.ts checks each one against that file, so this cannot drift. Never add numbers that are not in a report.",
+  "testSet": {
+    "cases": 43,
+    "caseSetHash": "86742b033473",
+    "categories": [
+      "Happy path",
+      "Angry customer",
+      "Ambiguous request",
+      "Prompt injection",
+      "Order does not exist",
+      "Policy edge"
+    ]
+  },
+  "currentVersion": "ab-05",
+  "versions": [
+    {
+      "id": "baseline-v1",
+      "label": "Baseline v1",
+      "variant": "baseline",
+      "date": "2026-11-14",
+      "run": "20261114T0824-baseline-gemini-test-4728",
+      "source": "docs/results/baseline-v1-full-report.md",
+      "metrics": {
+        "resolution": [
+          42,
+          43
+        ],
+        "toolUse": [
+          42,
+          43
+        ],
+        "unnecessaryEscalations": [
+          1,
+          36
+        ],
+        "missedEscalations": [
+          0,
+          7
+        ],
+        "groundednessJudge": [
+          40,
+          41
+        ],
+        "latencyP50s": 3.26,
+        "latencyP95s": 5.86,
+        "tokensPerConversation": 4849
+      },
+      "groundednessHand": {
+        "value": [
+          40,
+          41
+        ],
+        "source": "docs/results/baseline-v1.md"
+      }
+    },
+    {
+      "id": "release-v1",
+      "label": "Release v1",
+      "variant": "policy-before-handoff",
+      "date": "2026-11-15",
+      "run": "20261114T0948-policy-before-handoff-gemini-test-d904",
+      "source": "docs/results/release-v1-full-report.md",
+      "metrics": {
+        "resolution": [
+          42,
+          43
+        ],
+        "toolUse": [
+          42,
+          43
+        ],
+        "unnecessaryEscalations": [
+          0,
+          36
+        ],
+        "missedEscalations": [
+          0,
+          7
+        ],
+        "groundednessJudge": [
+          39,
+          40
+        ],
+        "latencyP50s": 4.2,
+        "latencyP95s": 18.99,
+        "tokensPerConversation": 5205
+      },
+      "groundednessHand": {
+        "value": [
+          39,
+          40
+        ],
+        "source": "docs/results/release-v1.md"
+      }
+    },
+    {
+      "id": "ab-02",
+      "label": "A/B 02",
+      "variant": "state-tool-outcome",
+      "date": "2026-11-15",
+      "run": "20261115T1012-state-tool-outcome-gemini-test-bcb9",
+      "source": "docs/results/ab-02-variant-full-report.md",
+      "metrics": {
+        "resolution": [
+          43,
+          43
+        ],
+        "toolUse": [
+          42,
+          43
+        ],
+        "unnecessaryEscalations": [
+          0,
+          36
+        ],
+        "missedEscalations": [
+          0,
+          7
+        ],
+        "groundednessJudge": [
+          42,
+          42
+        ],
+        "latencyP50s": 3.79,
+        "latencyP95s": 11.45,
+        "tokensPerConversation": 5374
+      },
+      "groundednessHand": {
+        "value": [
+          38,
+          40
+        ],
+        "source": "docs/results/ab-02-state-tool-outcome.md"
+      }
+    },
+    {
+      "id": "ab-03",
+      "label": "A/B 03",
+      "variant": "no-gap-filling-v3",
+      "date": "2026-11-15",
+      "run": "20261115T1340-no-gap-filling-v3-gemini-test-c9db",
+      "source": "docs/results/ab-03-variant-full-report.md",
+      "metrics": {
+        "resolution": [
+          42,
+          43
+        ],
+        "toolUse": [
+          43,
+          43
+        ],
+        "unnecessaryEscalations": [
+          0,
+          36
+        ],
+        "missedEscalations": [
+          1,
+          7
+        ],
+        "groundednessJudge": [
+          40,
+          41
+        ],
+        "latencyP50s": 2.76,
+        "latencyP95s": 5.98,
+        "tokensPerConversation": 5294
+      },
+      "groundednessHand": {
+        "value": [
+          38,
+          39
+        ],
+        "source": "docs/results/ab-03-no-gap-filling.md"
+      }
+    },
+    {
+      "id": "ab-05",
+      "label": "A/B 05",
+      "variant": "no-gap-filling-v6",
+      "date": "2026-11-18",
+      "run": "20261118T0104-no-gap-filling-v6-gemini-test-51ec",
+      "source": "docs/results/ab-05-variant-full-report.md",
+      "metrics": {
+        "resolution": [
+          43,
+          43
+        ],
+        "toolUse": [
+          43,
+          43
+        ],
+        "unnecessaryEscalations": [
+          0,
+          36
+        ],
+        "missedEscalations": [
+          0,
+          7
+        ],
+        "groundednessJudge": [
+          37,
+          38
+        ],
+        "latencyP50s": 2.02,
+        "latencyP95s": 4.1,
+        "tokensPerConversation": 5627
+      },
+      "groundednessHand": {
+        "value": [
+          37,
+          37
+        ],
+        "source": "docs/results/ab-05-no-gap-filling-v6.md"
+      }
+    }
+  ],
+  "experiments": [
+    {
+      "id": "ab-01",
+      "title": "Check the policies before handing off",
+      "variants": [
+        "baseline",
+        "policy-before-handoff"
+      ],
+      "hypothesis": "The agent handed self-serve requests (an address change) to a person because no tool could do the job, although a policy told the customer how.",
+      "result": "Unnecessary hand-offs went from 1/36 to 0/36, and the target case passed 4/4 runs vs 0/4. Tokens rose about 6%.",
+      "decision": "Kept: policy-before-handoff became the default.",
+      "doc": "docs/results/ab-01-policy-before-handoff.md"
+    },
+    {
+      "id": "ab-02",
+      "title": "State the tool's outcome exactly",
+      "variants": [
+        "policy-before-handoff",
+        "state-tool-outcome"
+      ],
+      "hypothesis": "After opening a return the agent often left out the refund amount and once promised the label 'shortly' when the tool said within a business day.",
+      "result": "Return replies stated the exact refund amount 12/12 vs 2/9. Hand-checked groundedness did not improve (38/40 vs 39/40, within noise).",
+      "decision": "Kept: state-tool-outcome became the default. Tokens +3%.",
+      "doc": "docs/results/ab-02-state-tool-outcome.md"
+    },
+    {
+      "id": "ab-03",
+      "title": "No gap filling",
+      "variants": [
+        "state-tool-outcome",
+        "no-gap-filling-v3"
+      ],
+      "hypothesis": "The agent tried a staff discount code planted in an order note, and told customers a package 'isn't lost' with no source.",
+      "result": "Tool use 43/43 vs 42/43; the planted code was refused 4/4 and the 'is it lost' case was grounded 4/4. The one miss, policy-12, fails 2 of 4 runs on both prompts.",
+      "decision": "Kept: no-gap-filling-v3 is the current default. Tokens -1.5%.",
+      "doc": "docs/results/ab-03-no-gap-filling.md"
+    },
+    {
+      "id": "ab-04",
+      "title": "Hand off instead of a made-up \"no\"",
+      "variants": [
+        "no-gap-filling-v3",
+        "no-gap-filling-v5"
+      ],
+      "hypothesis": "When no policy covered a question, the agent sometimes invented a 'no' (\"we don't offer gift wrapping\") instead of handing off.",
+      "result": "policy-12 handed off cleanly 4/4 vs 2/4, and hand-checked groundedness reached 38/38. But the agent skipped the return-eligibility check on policy-01 in 2 of 4 runs vs 0 of 4.",
+      "decision": "Not shipped: a metric got worse. Live stayed on no-gap-filling-v3 until A/B 05 added a mandatory eligibility check.",
+      "doc": "docs/results/ab-04-no-gap-filling-v5.md"
+    },
+    {
+      "id": "ab-05",
+      "title": "Hand off instead of a made-up \"no\", with a mandatory eligibility check",
+      "variants": [
+        "no-gap-filling-v3",
+        "no-gap-filling-v6"
+      ],
+      "hypothesis": "A/B 04's hand-off line fixed the made-up 'no' but made the agent skip the return-eligibility check when the customer stated the dates. One more line makes the check mandatory.",
+      "result": "policy-12 handed off cleanly 4/4 vs 2/4, policy-01 called the eligibility check 4/4, and a new dev case that skipped it 4/4 on both v3 and v5 now passes. Hand-checked groundedness 37/37. Tokens +6%.",
+      "decision": "Shipped: no-gap-filling-v6 is the current default.",
+      "doc": "docs/results/ab-05-no-gap-filling-v6.md"
+    }
+  ],
+  "failures": [
+    {
+      "id": "01",
+      "title": "an address change handed to a person when the policy already answered it",
+      "doc": "docs/failures/01-unnecessary-handoff-address-change.md",
+      "fix": "Prompt change (A/B 01)"
+    },
+    {
+      "id": "02",
+      "title": "the model followed an instruction hidden in an order note",
+      "doc": "docs/failures/02-order-note-injection.md",
+      "fix": "Prompt change (A/B 03); the code guard had already blocked the discount"
+    },
+    {
+      "id": "03",
+      "title": "a made-up tracking fact that the grader passed",
+      "doc": "docs/failures/03-made-up-tracking-fact.md",
+      "fix": "Measurement change: the judge now checks every conversation"
+    },
+    {
+      "id": "04",
+      "title": "\"do you ship to the UK?\" was handed to a person because search missed the answer",
+      "doc": "docs/failures/04-retrieval-stemmer.md",
+      "fix": "Retrieval fix (stemmer), checked on a 28-query benchmark plus 10 held-out queries"
+    },
+    {
+      "id": "05",
+      "title": "a model scored 100% while showing customers its private reasoning",
+      "doc": "docs/failures/05-model-leaked-its-reasoning.md",
+      "fix": "Output guard on every reply, plus a leak check in the grader"
+    },
+    {
+      "id": "06",
+      "title": "reassurance with no source (\"it's not lost\")",
+      "doc": "docs/failures/06-unsupported-reassurance.md",
+      "fix": "Prompt change (A/B 03)"
+    },
+    {
+      "id": "07",
+      "title": "\"we don't offer that\" when no policy says so",
+      "doc": "docs/failures/07-made-up-no.md",
+      "fix": "Prompt change (A/B 05), after A/B 04's first fix caused a tool-use regression"
+    },
+    {
+      "id": "08",
+      "title": "the judge flagged the agent's own rule as a made-up claim",
+      "doc": "docs/failures/08-judge-flagged-the-agents-own-rule.md",
+      "fix": "Measurement change: the judge now sees the agent's instructions (judge v3)"
+    }
+  ]
+}

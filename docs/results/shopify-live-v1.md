@@ -21,6 +21,6 @@ This is a scripted demo run, not an eval: one conversation per scenario, read by
 3. **Missing scope.** Tracking events need `write_fulfillments` as well as the merchant-managed fulfillment scopes. Added in app version relay-2.
 4. **Protected customer data.** For a Dev Dashboard custom app, this is unlocked by choosing **Custom distribution** in the Partner Dashboard (per Shopify staff), not through a request form.
 
-## Agent issue found (not fixed yet)
+## Agent issue found (fixed in A/B 02)
 
-After opening the return, the reply said "You'll get an email with your prepaid return label shortly." On this store, the tool result says a teammate emails the label within one business day. It's a small unsupported claim, the same kind as failure 03, and is listed in PLAN.md's next candidates.
+After opening the return, the reply said "You'll get an email with your prepaid return label shortly." On this store, the tool result says a teammate emails the label within one business day. It was a small unsupported claim, the same kind as failure 03. **Fixed** by the `state-tool-outcome` prompt ([A/B 02](ab-02-state-tool-outcome.md)): a later return on the same store (the bottle from #1043, a different order) got "A teammate will email the prepaid return label within one business day, and you'll receive your $38 refund 5-10 business days after the item reaches the warehouse."

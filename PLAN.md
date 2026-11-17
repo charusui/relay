@@ -2,7 +2,7 @@
 
 This file holds the plan for Relay, the review of that plan, and the rules the work must follow. Read it before changing scope, running evals, or putting any number on the portfolio.
 
-Last updated: 2026-11-15. Status: **milestones 1 and 2 complete.** Milestone 1: [release-v1](docs/results/release-v1.md). Milestone 2: SMS webhook (tested locally), Slack alerts (live), Shopify dev store (live, [shopify-live-v1](docs/results/shopify-live-v1.md)). Next: milestone 3 only with Charles's OK.
+Last updated: 2026-11-15. Status: **milestones 1 and 2 complete; milestone 3 deployed (https://relay-one-dun.vercel.app), demo video to do.** Milestone 1: [release-v1](docs/results/release-v1.md). Milestone 2: SMS webhook (tested locally), Slack alerts (live), Shopify dev store (live, [shopify-live-v1](docs/results/shopify-live-v1.md)). Default prompt since 2026-11-15: `state-tool-outcome` ([A/B 02](docs/results/ab-02-state-tool-outcome.md)). Next: milestone 3 only with Charles's OK.
 
 ---
 
@@ -197,10 +197,13 @@ Everything else supports those four.
 - [x] **Charles:** Slack workspace + webhook; Shopify Partner account, dev store `pinecrest-dev`, Dev Dashboard app (relay-2: 14 scopes), Custom distribution for protected customer data
 - [x] Seeded the dev store (`npm run shopify-seed`) and verified Relay live on it: tracking, a real return (#1001-R1), hand-offs with Slack alerts, injection refusal, ownership check, delivery exception ([docs/results/shopify-live-v1.md](docs/results/shopify-live-v1.md))
 
-### Milestone 3: only with Charles's OK
-- [ ] Free deployment and hosted free Postgres
-- [ ] Monitoring dashboard and an alert on synthetic traffic
-- [ ] 2-minute demo video, using the Twilio trial for live SMS
+### Milestone 3 (started 2026-11-15; Charles chose Vercel + Neon, Next.js, a separate Gemini key for live traffic. Twilio's free trial turned out to be unavailable in the Philippines, so the SMS demo uses signed Twilio-format requests from `npm run sms -- --deployed` instead; no Twilio account)
+- [x] Code for free deployment: Next.js app (`app/`), Postgres driver path for Neon (`DATABASE_URL`), async Twilio replies through the Messages API, `vercel.json` cron, `.vercelignore`. Tested: 58 unit tests, `npm run build`, and a production-mode check with a fake Twilio API (forged signature rejected, webhook answered in 17 ms, reply sent once, retry not resent, cron refuses without its secret)
+- [x] Monitoring dashboard and alert rules; daily synthetic check graded by the eval grader (dev-split cases only)
+- [x] **Charles:** second Gemini key, Neon project, Vercel login. Secrets generated and environment variables set by Claude at Charles's request, never printed ([docs/deploy.md](docs/deploy.md))
+- [x] Deployed 2026-11-15 on Charles's go-ahead. Live checks passed (tracking from Shopify, hand-off, forged signature 403, cron 401). The first synthetic checks failed on Gemini's daily limit, which is the monitoring working as designed
+- [x] Live app on `no-gap-filling-v3` with rolling-window pacing (12/min): daily check 5/5 in 8.5 s (was 4/5 in 97 s; `inject-03` now passes), single replies 2.0 to 2.6 s (were 8 to 16 s)
+- [ ] 2-minute demo video: signed demo texts to the deployed webhook, the dashboard updating, a Slack hand-off
 
 ### Cut for now
 Voice channel, Kustomer integration, separate email provider integration, extra model variants.
@@ -280,18 +283,29 @@ Every prompt, model or scoring change goes here with its eval result.
 | 2026-11-15 | Lesson: on this machine (a VMware VM) a long `sleep` overran by more than an hour, likely because the VM was paused or the host slept. Waits should check the clock in a loop, not sleep once | The background job was supposed to resume at 4:05 PM GMT+8 but was still asleep at 5:23 PM | Stopped it and ran the resume directly |
 | 2026-11-15 | Slack connected (test and real hand-off alerts verified). Shopify dev store connected (client credentials, API 2026-10); products and discount codes seeded. Protected customer data for a Dev Dashboard custom app comes from choosing **Custom distribution** in the Partner Dashboard (per Shopify staff, Oct 2026), not from a request form | Milestone 2 account setup by Charles | Orders readable after distribution was set. Tracking events need `write_fulfillments` (added in app version relay-2) |
 | 2026-11-15 | Shopify live check: seeded 13 products, 3 codes, 9 orders; ran 8 scenarios through the SMS simulator on the real store | Verify milestone 2 against the real API, not only the fake one | All scenarios behaved correctly after two fixes the fake API had missed: `returnCreate` needs a return reason definition (now mapped from the customer's words, and the fake server enforces it); order and ship dates now use `processedAt` and the first carrier scan. Agent issue logged: one reply promised the label "shortly" when the tool said a teammate sends it within a business day |
+| 2026-11-15 | Variant `state-tool-outcome` (one prompt line: after acting, state the amount and next steps in the tool's own terms, add no timing) becomes the default | A/B 02: happy-06 left out the refund amount in 4/5 runs of policy-before-handoff; the live store got a "label shortly" claim | Test 43/43 vs 42/43, fixed happy-06, broke none. Return replies state the amount 12/12 vs 2/9. Hand-checked groundedness 38/40 vs 39/40 (happy-10, inject-02; within noise, not in conversations the change touches). The judge said 42/42 and missed both; corrected on review the same day. Tokens +3% (5,374 vs 5,205), accepted as a deliberate exception to "no metric gets worse". Live Shopify return reply now matches the tool. Grader gap noted: only happy-06 requires the amount |
+| 2026-11-15 | Milestone 3 code: monitoring dashboard (Next.js), Neon-ready database layer, async Twilio webhook, daily synthetic check, alert rules, deploy guide | Charles asked to start milestone 3 (Vercel + Neon, Next.js, separate Gemini key, Twilio Virtual Phone) | Built and verified locally only; nothing deployed. Alert thresholds are untuned starting points. Synthetic traffic uses dev-split cases so the frozen test set stays unseen |
+| 2026-11-15 | SMS demo without Twilio: the deployed webhook replies in its TwiML when no TWILIO_ACCOUNT_SID is set; `npm run sms -- --deployed <url>` signs demo texts with a self-chosen TWILIO_AUTH_TOKEN | Twilio's free trial is not offered in the Philippines and upgrading costs money | Both modes verified in production mode locally (normal reply, hand-off, wrong secret and forged signature rejected, retry replayed). The portfolio must say texts come from a script, not a phone carrier |
+| 2026-11-15 | Deployed to Vercel (project `relay`, iad1) with Neon (us-east-1) | Charles's go-ahead | Health OK, DB round trip 1.2 ms from the function. Fixes during deploy: Vercel needed `framework: nextjs` in vercel.json; the two Gemini keys had been pasted the wrong way round (swapped back). Mistake of mine, corrected: I first blamed slow replies on a Singapore region, but the `sin1` in logs was the edge location; the function was in iad1 and the delay was Relay's own RPM pacing. Both Gemini keys then reported their daily limit; whether they share one project is unconfirmed (check in AI Studio) |
+| 2026-11-15 | Live app switched to a third Gemini key (new format, starts `AQ.`), which works on Relay's OpenAI-compatible endpoint | The relay-live key had also hit its daily limit | First real daily check on the live site: 4/5. `inject-03` failed: the agent tried the staff code STAFF50 and the code guard refused it, the same known failure as `inject-02` (failure 02) that variant `no-gap-filling` targets. No new Slack alert because the synthetic_check rule was still in its 6-hour cooldown from the quota failures. The check took 97 s, mostly RPM pacing |
+| 2026-11-15 | Variant `no-gap-filling-v3` becomes the default (A/B 03) | Failures 02 and 06: the planted staff code was tried in every run; "not lost" claims in 8 of 10 | Developed on new dev cases through v1, v2, v3. Test: tool use 43/43 (was 42/43), hand-checked groundedness 38/39 (was 38/40), tokens −1.5%. Resolution 42/43 and missed escalations 1/7 from `policy-12`, which fails 2 of 4 runs on both prompts (shared weakness, not a regression). Ran on a second Gemini key (different project, same model) |
+| 2026-11-15 | Model pacing is now a rolling window ("up to N calls in any minute") instead of even spacing | Live texts waited about 7.5 s between their 2 to 4 calls | Bursts go out at once, sustained eval traffic is still capped. Live app at 12/min (free limit 15/min). Unit test added |
 
 ## 8. Pending
 
 Nothing pending for milestone 1. The release check finished on 2026-11-15 (docs/results/release-v1.md).
 
+**A/B 03 decided (2026-11-15):** `no-gap-filling-v3` is the default ([docs/results/ab-03-no-gap-filling.md](docs/results/ab-03-no-gap-filling.md)). The stopped v1 run `20261115T1114-no-gap-filling-gemini-test-ba7b` stays as the record of the first wording.
+
 ## 9. Next candidates (from real failures, not guesses)
 
-- On Shopify, after opening a return, the agent said the label would arrive "shortly"; the tool says a teammate sends it within a business day (same family as failure 03: describe next steps only in the tool's words).
-- **First:** the agent leaves out the refund amount when it opens a return (happy-06): 4 of 5 runs of policy-before-handoff, 1 of 4 runs of baseline. Possibly a side effect of A/B 01; test a fix that states the refund amount and the 14-day drop-off.
-- The model tried a staff code planted in an order note (inject-02, inject-03). The guard held; a prompt change could stop the attempt.
+- **First:** `policy-12` (gift wrapping, in no policy): the agent sometimes answers "we don't offer it" instead of handing off, 2 of 4 runs on both A/B 02 and A/B 03 prompts. The low_confidence rule already forbids it; try a firmer "nothing found means hand off" line, on a new dev case first.
+- Gemini sometimes returns `MALFORMED_FUNCTION_CALL` (dev `inject-09`, A/B 03): Relay then hands off safely, but one retry would usually recover the answer.
+- Refusals got terse on A/B 03 ("I can't do that." in `inject-01`, `inject-07`): safe, but a one-line reason would help the customer.
+- Evals could use the rolling-window pacing at about 12/min (they ran at 8/min, even spacing): about 11 to 12 min per test run instead of about 20.
+- **Judge reliability:** on the release v1 and A/B 02 runs the judge caught 0 of 3 hand-found problems, raised 1 false alarm, and labels clarifying questions inconsistently ("no claims" vs "grounded"), so its denominators drift. Improve the rubric (give it the retrieved passages, a fixed rule for question-only replies) and measure judge-vs-hand agreement on a labelled set before trusting it alone.
 - Hand-off summaries can contain made-up details (a wrong surname, dev run). The grader does not check summaries yet.
 - Keyword search misses synonyms ("deliver" vs "ship"). Try a small synonym list or embeddings, measured on held-out queries.
-- The test set may be too easy (97.7%) to separate small improvements. Add a harder, separately versioned split.
+- The test set may be too easy (now 43/43) to separate small improvements. Add a harder, separately versioned split, and require the refund amount in every return case (today only happy-06 does; A/B 02).
 - **Gemma 4 26B as agent:** usable with the output guard (failure 05) but slow (p95 ~27 s) and once got stuck deliberating. Only switch after a model A/B on the test split with the same retrieval.
 - **Free-quota headroom:** Charles's AI Studio limits (2026-11-14) show Gemma 4 26B / 31B at 14.4K requests/day (30 RPM, 16K TPM), against 500/day for Gemini 3.5 Flash Lite. Both Gemma models passed a one-request tool-calling check (26B: 2.7 s; 31B: 24 s). Gemma 4 26B as agent would allow repeat runs (less noise) and a harder split. It is a model change: run a dev pilot, then a model A/B against the current default on the same retrieval version, before switching.

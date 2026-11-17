@@ -28,8 +28,14 @@ export type ProviderConfig = {
   baseUrl: string;
   apiKey?: string;
   modelId: string;
-  /** Client-side cap on requests per minute, to stay under free-tier limits. 0 = no cap. */
+  /**
+   * Client-side cap on requests in any rolling minute, to stay under free-tier limits. 0 = no cap.
+   * A burst up to the cap goes out at once (one customer message needs 2 to 4 calls), and only
+   * sustained traffic, such as an eval run, is slowed down.
+   */
   rpm: number;
+  /** Length of the rolling window for rpm. Default 60 s (tests use a tiny value). */
+  rpmWindowMs?: number;
   /** Strip JSON-schema keywords the provider rejects. */
   sanitizeSchema?: (schema: any) => any;
   /** Backoff step when a 429 gives no wait time (tests use a tiny value). Default 10 s. */
@@ -38,8 +44,8 @@ export type ProviderConfig = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Longest provider-requested wait we sit through before stopping a run (it can be resumed later). */
-export const MAX_RATE_LIMIT_WAIT_MS = 20 * 60_000;
+/** Longest provider-requested wait before giving up. 20 min suits evals; a deployed webhook sets RELAY_MAX_RATE_LIMIT_WAIT_MS lower (Vercel free functions stop at 5 min). */
+export const MAX_RATE_LIMIT_WAIT_MS = Number(process.env.RELAY_MAX_RATE_LIMIT_WAIT_MS) || 20 * 60_000;
 
 /**
  * How long the provider asks us to wait, from (in order) the Retry-After
@@ -122,7 +128,8 @@ export class OpenAIChatModel implements ModelClient {
   readonly offline = false;
   readonly provider: string;
   readonly modelId: string;
-  private lastRequestAt = 0;
+  /** Start times of recent requests, oldest first, for the rolling-window cap. */
+  private recent: number[] = [];
 
   constructor(private cfg: ProviderConfig) {
     this.provider = cfg.provider;
@@ -131,11 +138,18 @@ export class OpenAIChatModel implements ModelClient {
 
   private async throttle(): Promise<number> {
     if (!this.cfg.rpm) return 0;
-    const gap = 60_000 / this.cfg.rpm;
-    const wait = Math.max(0, this.lastRequestAt + gap - Date.now());
-    if (wait) await sleep(wait);
-    this.lastRequestAt = Date.now();
-    return wait;
+    const windowMs = this.cfg.rpmWindowMs ?? 60_000;
+    let waited = 0;
+    for (;;) {
+      const now = Date.now();
+      while (this.recent.length && this.recent[0] <= now - windowMs) this.recent.shift();
+      if (this.recent.length < this.cfg.rpm) break;
+      const wait = this.recent[0] + windowMs - now;
+      await sleep(wait);
+      waited += wait;
+    }
+    this.recent.push(Date.now());
+    return waited;
   }
 
   async create(req: ModelRequest): Promise<ModelResponse> {

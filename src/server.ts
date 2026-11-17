@@ -14,20 +14,19 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { parseArgs } from 'node:util';
 import { loadEnv } from './config.ts';
-import { describeModelError } from './agent/model.ts';
 import { createModel } from './agent/providers.ts';
 import { DEFAULT_VARIANT, getVariant } from './agent/variants.ts';
-import { HELP_TEXT, START_TEXT, smsKeyword, twiml, validTwilioSignature } from './channels/twilio.ts';
+import { validTwilioSignature } from './channels/twilio.ts';
+import { handleTwilioSms, type EscalationInfo } from './channels/twilioFlow.ts';
 import { RelayDb } from './db/db.ts';
-import { HANDOFF_LINE, handleInbound, type Escalation, type HandlerDeps } from './handler.ts';
-import { normalizeContact } from './store/store.ts';
+import type { Escalation, HandlerDeps } from './handler.ts';
 import { createStore } from './store/fromEnv.ts';
 import { escalationAlertFromEnv } from './alerts/slack.ts';
 
 /** Used only when the server is NOT exposed publicly (no RELAY_PUBLIC_URL) and no real token is set. */
 export const LOCAL_DEV_TWILIO_TOKEN = 'relay-local-dev-token-not-a-secret';
 
-export type EscalationInfo = { conversationId: string; channel: string; from: string; text: string };
+export type { EscalationInfo };
 
 export type ServerConfig = {
   /** Twilio auth token used to verify X-Twilio-Signature. */
@@ -38,8 +37,6 @@ export type ServerConfig = {
   onEscalation?: (e: Escalation, info: EscalationInfo) => Promise<void>;
   log?: (s: string) => void;
 };
-
-const FALLBACK_REPLY = `Sorry, we're having trouble replying right now. ${HANDOFF_LINE}`;
 
 async function readBody(req: IncomingMessage, limit = 64 * 1024): Promise<string> {
   let size = 0;
@@ -57,8 +54,6 @@ function send(res: ServerResponse, status: number, body: string, type = 'text/pl
   res.end(body);
 }
 
-const sendTwiml = (res: ServerResponse, message?: string) => send(res, 200, twiml(message), 'text/xml; charset=utf-8');
-
 export function createRelayServer(deps: HandlerDeps, cfg: ServerConfig): Server {
   const log = cfg.log ?? ((s: string) => console.log(s));
 
@@ -71,54 +66,9 @@ export function createRelayServer(deps: HandlerDeps, cfg: ServerConfig): Server 
       log(`  rejected: bad or missing X-Twilio-Signature (url ${url})`);
       return send(res, 403, 'invalid signature');
     }
-    const { From: from, Body: body = '', MessageSid: sid } = params;
-    if (!from || !sid) return send(res, 400, 'missing From or MessageSid');
-    const contact = normalizeContact(from);
-
-    // Twilio retries on timeouts and errors: the same MessageSid must never act twice.
-    const claim = await deps.db.claimInboundEvent('twilio', sid);
-    if (claim.duplicate) {
-      log(`  duplicate ${sid}: replaying the stored reply, agent not run`);
-      return sendTwiml(res, claim.reply ?? undefined);
-    }
-
-    const keyword = smsKeyword(body);
-    if (keyword === 'stop') {
-      await deps.db.setSmsOptOut(contact, true);
-      await deps.db.completeInboundEvent('twilio', sid, null, null);
-      log(`  ${contact} opted out (STOP)`);
-      return sendTwiml(res); // Twilio sends the carrier opt-out confirmation itself
-    }
-    if (keyword === 'start') {
-      await deps.db.setSmsOptOut(contact, false);
-      await deps.db.completeInboundEvent('twilio', sid, null, START_TEXT);
-      return sendTwiml(res, START_TEXT);
-    }
-    if (keyword === 'help') {
-      await deps.db.completeInboundEvent('twilio', sid, null, HELP_TEXT);
-      return sendTwiml(res, HELP_TEXT);
-    }
-    if (await deps.db.isSmsOptedOut(contact)) {
-      await deps.db.completeInboundEvent('twilio', sid, null, null);
-      log(`  ${contact} is opted out: message logged, no reply`);
-      return sendTwiml(res);
-    }
-
-    try {
-      const r = await handleInbound(deps, { channel: 'sms', from: contact, text: body });
-      await deps.db.completeInboundEvent('twilio', sid, r.conversationId, r.reply);
-      log(`  ${contact} -> ${r.reply.slice(0, 80).replace(/\n/g, ' ')}${r.escalation ? `  [escalated: ${r.escalation.reason}]` : ''}`);
-      if (r.escalation && cfg.onEscalation) {
-        // An alert failing must never break the customer's reply.
-        cfg.onEscalation(r.escalation, { conversationId: r.conversationId, channel: 'sms', from: contact, text: body }).catch((err) => log(`  escalation alert failed: ${(err as Error).message}`));
-      }
-      return sendTwiml(res, r.reply);
-    } catch (err) {
-      // Reply with a safe message (status 200, so Twilio does not retry into the same failure).
-      log(`  agent error for ${sid}: ${describeModelError(err)}`);
-      await deps.db.completeInboundEvent('twilio', sid, null, FALLBACK_REPLY);
-      return sendTwiml(res, FALLBACK_REPLY);
-    }
+    // The local server answers in sync mode (reply inside the TwiML). The deployed route uses async mode.
+    const r = await handleTwilioSms(deps, { mode: 'sync', onEscalation: cfg.onEscalation, log }, params);
+    return send(res, r.status, r.body, r.contentType);
   }
 
   return createServer((req, res) => {

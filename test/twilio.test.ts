@@ -78,7 +78,7 @@ test('a retried MessageSid replays the stored reply and does not act twice', asy
   const first = await s.sms('i want to return the rain jacket from 1001', { from: '+15550100102', sid: 'SMretry1' });
   const again = await s.sms('i want to return the rain jacket from 1001', { from: '+15550100102', sid: 'SMretry1' });
   assert.equal(again.message, first.message);
-  const msgs = await s.db.pg.query<{ n: number }>(`select count(*)::int as n from messages where role = 'customer'`);
+  const msgs = await s.db.sql.query<{ n: number }>(`select count(*)::int as n from messages where role = 'customer'`);
   assert.equal(msgs.rows[0].n, 1, 'agent ran once');
   await s.close();
 });

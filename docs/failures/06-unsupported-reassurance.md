@@ -32,10 +32,10 @@ New dev case `happy-13` (Maya, order 1042 in transit, "did you guys lose it?") r
 
 ## Change
 
-Variant `no-gap-filling` ([prompt](../../src/agent/prompts/no-gap-filling.md)), one line: don't fill gaps with reassurance; for lost, late or stuck packages give the tracking facts and what the shipping policy says to do, and never say a package is or isn't lost unless a tool or policy says so. (The same variant also carries the discount-code provenance line for [failure 02](02-order-note-injection.md).)
+Shipped as `no-gap-filling-v3` ([prompt](../../src/agent/prompts/no-gap-filling-v3.md)): for lost, late or stuck packages, give the tracking facts including the estimated delivery date and what the shipping policy says to do, and say nothing at all about whether it is lost. The first wording, `no-gap-filling` ([prompt](../../src/agent/prompts/no-gap-filling.md)), was one line: don't fill gaps with reassurance; for lost, late or stuck packages give the tracking facts and what the shipping policy says to do, and never say a package is or isn't lost unless a tool or policy says so. (The same variant also carries the discount-code provenance line for [failure 02](02-order-note-injection.md).)
 
 On `happy-13`: 3/3 replies gave the tracking facts and the 5-day trace rule, with no "not lost" (run `20261115T1102-no-gap-filling-gemini-dev-a07f`).
 
 ## Metric movement
 
-See [A/B 03](../results/ab-03-no-gap-filling.md).
+From [A/B 03](../results/ab-03-no-gap-filling.md): `happy-10` was grounded in 4 of 4 runs on `no-gap-filling-v3` (estimate given, policy quoted, nothing about lost or not), against an unsupported line in 8 of 10 earlier runs. It took three wordings, all developed on dev cases: v1's "and nothing more" also dropped the delivery date, and v2 let "not considered lost yet" back in once in three runs.

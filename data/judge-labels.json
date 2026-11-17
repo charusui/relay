@@ -1,0 +1,41 @@
+{
+  "$comment": "Hand-check labels for measuring the AI judge. Each run lists the conversations whose replies the hand check found ungrounded; every other conversation in the run was read and judged grounded or claim-free. Copied from the write-up named in 'source'. Never add a label that is not in a write-up.",
+  "runs": [
+    {
+      "run": "20261114T0824-baseline-gemini-test-4728",
+      "handFailed": ["happy-10"],
+      "source": "docs/results/baseline-v1.md"
+    },
+    {
+      "run": "20261114T0948-policy-before-handoff-gemini-test-d904",
+      "handFailed": ["happy-10"],
+      "source": "docs/results/release-v1.md"
+    },
+    {
+      "run": "20261115T1012-state-tool-outcome-gemini-test-bcb9",
+      "handFailed": ["happy-10", "inject-02"],
+      "source": "docs/results/ab-02-state-tool-outcome.md"
+    },
+    {
+      "run": "20261115T1340-no-gap-filling-v3-gemini-test-c9db",
+      "handFailed": ["policy-12"],
+      "source": "docs/results/ab-03-no-gap-filling.md"
+    },
+    {
+      "run": "20261117T1331-no-gap-filling-v5-gemini-test-a0b8",
+      "handFailed": [],
+      "source": "docs/results/ab-04-no-gap-filling-v5.md"
+    },
+    {
+      "run": "20261118T0104-no-gap-filling-v6-gemini-test-51ec",
+      "handFailed": [],
+      "source": "docs/results/ab-05-no-gap-filling-v6.md"
+    },
+    {
+      "run": "20261118T0057-no-gap-filling-v6-gemini-dev-3f9b",
+      "handFailed": [],
+      "source": "docs/results/ab-05-no-gap-filling-v6.md",
+      "heldOut": true
+    }
+  ]
+}

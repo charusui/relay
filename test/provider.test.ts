@@ -81,3 +81,20 @@ test('a daily-quota 429 with no retry time stops after a few tries', async () =>
   await assert.rejects(m.create({ system: 's', context: '', tools: [], messages: [{ role: 'user', content: 'hi' }] }), QuotaExhaustedError);
   srv.close();
 });
+
+test('rpm cap: a burst up to the cap goes out at once, the next call waits for the window', async () => {
+  const srv = await fakeServer([200, 200, 200].map((status) => ({ status, body: toolReply })));
+  const m = new OpenAIChatModel({ provider: 'fake', baseUrl: srv.url, modelId: 'm', rpm: 2, rpmWindowMs: 400 });
+  const req = { system: 's', context: 'c', tools: [], messages: [{ role: 'user' as const, content: 'hi' }] };
+  const t0 = Date.now();
+  const a = await m.create(req);
+  const b = await m.create(req);
+  const burstMs = Date.now() - t0;
+  const c = await m.create(req);
+  const totalMs = Date.now() - t0;
+  srv.close();
+  assert.ok(burstMs < 300, `first two calls should not wait (took ${burstMs} ms)`);
+  assert.equal(a.waitMs + b.waitMs, 0);
+  assert.ok(totalMs >= 380, `third call should wait for the window (total ${totalMs} ms)`);
+  assert.ok(c.waitMs > 0);
+});
