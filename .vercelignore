@@ -6,3 +6,5 @@
 reports
 .next
 node_modules
+# Screenshots for the README; the site does not need them.
+docs/screenshots

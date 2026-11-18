@@ -9,7 +9,8 @@ import type { RelayDb, Traffic } from '../db/db.ts';
 
 export const ALL_TRAFFIC: Traffic[] = ['live', 'synthetic', 'demo'];
 
-export type WindowOpts = { hours: number; traffic?: Traffic[] };
+/** hours: window length. offsetHours: how far back the window ends (0 = now), for previous-period comparisons. */
+export type WindowOpts = { hours: number; traffic?: Traffic[]; offsetHours?: number };
 
 export type Summary = {
   windowHours: number;
@@ -45,13 +46,14 @@ const CONV = `c.eval_run_id is null and c.traffic = any($2::text[])`;
 
 export async function summary(db: RelayDb, opts: WindowOpts): Promise<Summary> {
   const traffic = opts.traffic ?? ALL_TRAFFIC;
-  const p = [opts.hours, traffic];
-  const since = `now() - make_interval(hours => $1::int)`;
+  const p = [opts.hours, traffic, opts.offsetHours ?? 0];
+  // Window: from (offset + hours) ago up to offset ago.
+  const inWindow = (col: string) => `${col} >= now() - make_interval(hours => ($1::int + $3::int)) and ${col} < now() - make_interval(hours => $3::int)`;
 
   const [conv, msgs, turns, fails, esc, reasons, tools] = await Promise.all([
-    db.sql.query<{ n: number }>(`select count(*)::int as n from conversations c where c.created_at >= ${since} and ${CONV}`, p),
+    db.sql.query<{ n: number }>(`select count(*)::int as n from conversations c where ${inWindow('c.created_at')} and ${CONV}`, p),
     db.sql.query<{ n: number }>(
-      `select count(*)::int as n from messages m join conversations c on c.id = m.conversation_id where m.role = 'customer' and m.created_at >= ${since} and ${CONV}`,
+      `select count(*)::int as n from messages m join conversations c on c.id = m.conversation_id where m.role = 'customer' and ${inWindow('m.created_at')} and ${CONV}`,
       p,
     ),
     db.sql.query<{ n: number; p50: number | null; p95: number | null; avg_tokens: number | null; total_tokens: number; withheld: number }>(
@@ -62,27 +64,27 @@ export async function summary(db: RelayDb, opts: WindowOpts): Promise<Summary> {
               coalesce(sum(t.input_tokens + t.output_tokens), 0)::float8 as total_tokens,
               count(*) filter (where t.abnormal = 'leaked_internals')::int as withheld
          from turns t join conversations c on c.id = t.conversation_id
-        where t.created_at >= ${since} and ${CONV}`,
+        where ${inWindow('t.created_at')} and ${CONV}`,
       p,
     ),
-    db.sql.query<{ n: number }>(`select count(*)::int as n from failures f where f.created_at >= now() - make_interval(hours => $1::int) and f.traffic = any($2::text[])`, p),
+    db.sql.query<{ n: number }>(`select count(*)::int as n from failures f where ${inWindow('f.created_at')} and f.traffic = any($2::text[])`, p),
     db.sql.query<{ convs: number; agent: number; code: number }>(
       `select count(distinct e.conversation_id)::int as convs,
               count(*) filter (where e.source = 'agent')::int as agent,
               count(*) filter (where e.source = 'code')::int as code
          from escalations e join conversations c on c.id = e.conversation_id
-        where e.created_at >= ${since} and ${CONV}`,
+        where ${inWindow('e.created_at')} and ${CONV}`,
       p,
     ),
     db.sql.query<{ reason: string; n: number }>(
       `select e.reason, count(*)::int as n from escalations e join conversations c on c.id = e.conversation_id
-        where e.created_at >= ${since} and ${CONV} group by e.reason order by n desc, e.reason`,
+        where ${inWindow('e.created_at')} and ${CONV} group by e.reason order by n desc, e.reason`,
       p,
     ),
     db.sql.query<{ name: string; n: number; errors: number }>(
       `select tc.name, count(*)::int as n, count(*) filter (where tc.is_error)::int as errors
          from tool_calls tc join conversations c on c.id = tc.conversation_id
-        where tc.created_at >= ${since} and ${CONV} group by tc.name order by n desc, tc.name`,
+        where ${inWindow('tc.created_at')} and ${CONV} group by tc.name order by n desc, tc.name`,
       p,
     ),
   ]);
@@ -206,7 +208,7 @@ export type ConversationDetail = {
   model: string;
   createdAt: string;
   messages: { role: string; body: string; at: string }[];
-  turns: { at: string; activeLatencyMs: number; tokens: number; steps: number; abnormal: string | null; tools: { name: string; input: unknown; output: unknown; isError: boolean }[] }[];
+  turns: { at: string; activeLatencyMs: number; tokens: number; steps: number; abnormal: string | null; tools: { name: string; input: unknown; output: unknown; isError: boolean; durationMs: number }[] }[];
   escalations: { reason: string; source: string; summary: string; at: string }[];
 };
 
@@ -223,8 +225,8 @@ export async function conversationDetail(db: RelayDb, id: string): Promise<Conve
       `select id, created_at, active_latency_ms::float8 as active_latency_ms, (input_tokens + output_tokens)::int as tokens, steps, abnormal from turns where conversation_id = $1 order by id`,
       [id],
     ),
-    db.sql.query<{ turn_id: number; name: string; input: unknown; output: unknown; is_error: boolean }>(
-      `select turn_id, name, input, output, is_error from tool_calls where conversation_id = $1 order by turn_id, seq`,
+    db.sql.query<{ turn_id: number; name: string; input: unknown; output: unknown; is_error: boolean; duration_ms: number }>(
+      `select turn_id, name, input, output, is_error, duration_ms::float8 as duration_ms from tool_calls where conversation_id = $1 order by turn_id, seq`,
       [id],
     ),
     db.sql.query<{ reason: string; source: string; summary: string; created_at: Date | string }>(
@@ -248,7 +250,7 @@ export async function conversationDetail(db: RelayDb, id: string): Promise<Conve
       tokens: n(t.tokens),
       steps: n(t.steps),
       abnormal: t.abnormal,
-      tools: tools.rows.filter((x) => n(x.turn_id) === n(t.id)).map((x) => ({ name: x.name, input: x.input, output: x.output, isError: x.is_error })),
+      tools: tools.rows.filter((x) => n(x.turn_id) === n(t.id)).map((x) => ({ name: x.name, input: x.input, output: x.output, isError: x.is_error, durationMs: n(x.duration_ms) })),
     })),
     escalations: esc.rows.map((e) => ({ reason: e.reason, source: e.source, summary: e.summary, at: iso(e.created_at) })),
   };
@@ -274,3 +276,135 @@ export async function recentSyntheticRuns(db: RelayDb, limit = 14) {
 }
 
 export type SyntheticCaseResult = { caseId: string; title: string; pass: boolean; reasons: string[]; conversationId?: string; error?: string };
+
+
+/* ------------------------------------------------------------ conversation list */
+
+export type Outcome = 'answered' | 'handed_off' | 'failed';
+export type ConversationSort = 'started' | 'replies' | 'tokens' | 'latency';
+
+export type ListOpts = {
+  hours: number;
+  traffic?: Traffic[];
+  /** Text search over the customer's and the agent's messages (case-insensitive). */
+  q?: string;
+  outcome?: Outcome;
+  channel?: 'sms' | 'email';
+  sort?: ConversationSort;
+  dir?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+};
+
+export type ConversationRowView = ConversationListItem & { outcome: Outcome; avgLatencyMs: number | null; lastMessage: string | null };
+
+// A conversation "failed" when a customer message got no agent reply (the model call threw;
+// the customer got the channel's fallback text, which is not logged as an agent message).
+const OUTCOME_SQL = `case
+    when exists (select 1 from escalations e where e.conversation_id = c.id) then 'handed_off'
+    when (select count(*) from messages m where m.conversation_id = c.id and m.role = 'customer')
+       > (select count(*) from messages m where m.conversation_id = c.id and m.role = 'agent') then 'failed'
+    else 'answered' end`;
+
+const SORT_SQL: Record<ConversationSort, string> = {
+  started: 'c.created_at',
+  replies: 'turns',
+  tokens: 'tokens',
+  latency: 'avg_latency_ms',
+};
+
+export async function listConversations(db: RelayDb, opts: ListOpts): Promise<{ rows: ConversationRowView[]; total: number }> {
+  const params: unknown[] = [opts.hours, opts.traffic ?? ALL_TRAFFIC];
+  const where = [`c.eval_run_id is null`, `c.traffic = any($2::text[])`, `c.created_at >= now() - make_interval(hours => $1::int)`];
+  if (opts.q?.trim()) {
+    params.push(`%${opts.q.trim().replace(/[\\%_]/g, (m) => '\\' + m)}%`);
+    where.push(`(c.id ilike $${params.length} or exists (select 1 from messages m where m.conversation_id = c.id and m.body ilike $${params.length}))`);
+  }
+  if (opts.channel) {
+    params.push(opts.channel);
+    where.push(`c.channel = $${params.length}`);
+  }
+  const base = `
+    select c.id, c.traffic, c.channel, c.contact, c.status, c.created_at,
+      (select m.body from messages m where m.conversation_id = c.id and m.role = 'customer' order by m.id limit 1) as first_message,
+      (select m.body from messages m where m.conversation_id = c.id order by m.id desc limit 1) as last_message,
+      (select count(*)::int from turns t where t.conversation_id = c.id) as turns,
+      (select coalesce(sum(t.input_tokens + t.output_tokens), 0)::int from turns t where t.conversation_id = c.id) as tokens,
+      (select avg(t.active_latency_ms)::float8 from turns t where t.conversation_id = c.id) as avg_latency_ms,
+      (select e.reason from escalations e where e.conversation_id = c.id order by e.created_at limit 1) as handoff_reason,
+      ${OUTCOME_SQL} as outcome
+    from conversations c where ${where.join(' and ')}`;
+  const outcomeFilter = opts.outcome ? (params.push(opts.outcome), `where x.outcome = $${params.length}`) : '';
+  const sortCol = SORT_SQL[opts.sort ?? 'started'];
+  const dir = opts.dir === 'asc' ? 'asc' : 'desc';
+  const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
+  const offset = Math.max(opts.offset ?? 0, 0);
+  const [rows, total] = await Promise.all([
+    db.sql.query<{ id: string; traffic: Traffic; channel: string; contact: string; status: string; created_at: Date | string; first_message: string | null; last_message: string | null; turns: number; tokens: number; avg_latency_ms: number | null; handoff_reason: string | null; outcome: Outcome }>(
+      `select * from (${base}) x ${outcomeFilter} order by ${sortCol.replace('c.created_at', 'x.created_at')} ${dir} nulls last, x.id limit ${limit} offset ${offset}`,
+      params,
+    ),
+    db.sql.query<{ n: number }>(`select count(*)::int as n from (${base}) x ${outcomeFilter}`, params),
+  ]);
+  return {
+    total: n(total.rows[0]?.n),
+    rows: rows.rows.map((x) => ({
+      id: x.id,
+      traffic: x.traffic,
+      channel: x.channel,
+      contact: maskContact(x.contact),
+      status: x.status,
+      createdAt: iso(x.created_at),
+      firstMessage: x.first_message,
+      lastMessage: x.last_message,
+      turns: n(x.turns),
+      tokens: n(x.tokens),
+      avgLatencyMs: nOrNull(x.avg_latency_ms),
+      handoffReason: x.handoff_reason,
+      outcome: x.outcome,
+    })),
+  };
+}
+
+/* ------------------------------------------------------------ hand-off queue */
+
+export type HandoffItem = {
+  id: string;
+  conversationId: string;
+  reason: string;
+  source: 'agent' | 'code';
+  summary: string;
+  createdAt: string;
+  waitingMs: number;
+  channel: string;
+  contact: string;
+  traffic: Traffic;
+  lastCustomerMessage: string | null;
+};
+
+/** Open escalations on non-eval conversations, oldest first (the order a teammate would work them). */
+export async function openHandoffs(db: RelayDb, traffic: Traffic[] = ALL_TRAFFIC): Promise<HandoffItem[]> {
+  const r = await db.sql.query<{ id: string; conversation_id: string; reason: string; source: 'agent' | 'code'; summary: string; created_at: Date | string; waiting_ms: number; channel: string; contact: string; traffic: Traffic; last_customer: string | null }>(
+    `select e.id, e.conversation_id, e.reason, e.source, e.summary, e.created_at,
+            (extract(epoch from (now() - e.created_at)) * 1000)::float8 as waiting_ms,
+            c.channel, c.contact, c.traffic,
+            (select m.body from messages m where m.conversation_id = c.id and m.role = 'customer' order by m.id desc limit 1) as last_customer
+       from escalations e join conversations c on c.id = e.conversation_id
+      where e.status = 'open' and c.eval_run_id is null and c.traffic = any($1::text[])
+      order by e.created_at`,
+    [traffic],
+  );
+  return r.rows.map((x) => ({
+    id: x.id,
+    conversationId: x.conversation_id,
+    reason: x.reason,
+    source: x.source,
+    summary: x.summary,
+    createdAt: iso(x.created_at),
+    waitingMs: n(x.waiting_ms),
+    channel: x.channel,
+    contact: maskContact(x.contact),
+    traffic: x.traffic,
+    lastCustomerMessage: x.last_customer,
+  }));
+}

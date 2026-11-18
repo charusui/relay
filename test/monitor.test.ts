@@ -162,3 +162,53 @@ test('synthetic check: dev cases only, graded, logged, threads closed', async ()
   assert.ok((await recentAlerts(db)).some((a) => a.rule === 'synthetic_check'));
   await db.close();
 });
+
+test('conversation list: search, filters, outcome, paging, total; previous-period summary; hand-off queue', async () => {
+  const { listConversations, openHandoffs } = await import('../src/monitor/metrics.ts');
+  const db = await RelayDb.open('memory');
+  const deps = { db, store: new MockStore(), model: new OfflineModel(), variant: getVariant('baseline') };
+  await handleInbound(deps, { channel: 'sms', from: '+15550100101', text: 'where is #1042' });
+  await handleInbound(deps, { channel: 'sms', from: '+15550100106', text: 'can I talk to a real person' });
+  await handleInbound(deps, { channel: 'email', from: 'lena.fischer@example.com', text: 'do you ship to the UK?', traffic: 'demo' });
+  // A failed message: the customer wrote, no agent reply was logged.
+  await handleInbound({ ...deps, model: failingModel }, { channel: 'sms', from: '+15550100109', text: 'hello 100%_odd' }).catch(() => {});
+
+  const all = await listConversations(db, { hours: 24 });
+  assert.equal(all.total, 4);
+  assert.equal(all.rows.length, 4);
+  assert.deepEqual(
+    all.rows.map((r) => r.outcome).sort(),
+    ['answered', 'answered', 'failed', 'handed_off'],
+  );
+  assert.ok(all.rows.every((r) => !/0100101|0100106|lena\.fischer/.test(r.contact)));
+
+  assert.equal((await listConversations(db, { hours: 24, q: 'UK' })).total, 1);
+  assert.equal((await listConversations(db, { hours: 24, q: '100%_' })).total, 1); // % and _ are literal, not wildcards
+  assert.equal((await listConversations(db, { hours: 24, q: 'zzz-nothing' })).total, 0);
+  assert.equal((await listConversations(db, { hours: 24, outcome: 'handed_off' })).total, 1);
+  assert.equal((await listConversations(db, { hours: 24, outcome: 'failed' })).total, 1);
+  assert.equal((await listConversations(db, { hours: 24, channel: 'email' })).total, 1);
+  assert.equal((await listConversations(db, { hours: 24, traffic: ['demo'] })).total, 1);
+  const page2 = await listConversations(db, { hours: 24, limit: 3, offset: 3 });
+  assert.equal(page2.total, 4);
+  assert.equal(page2.rows.length, 1);
+  const byReplies = await listConversations(db, { hours: 24, sort: 'replies', dir: 'asc' });
+  assert.equal(byReplies.rows[0].outcome, 'failed'); // no agent reply was logged, so the fewest replies
+
+  // Previous period: move one conversation (and its rows) 30 hours back.
+  const moved = all.rows.find((r) => r.outcome === 'answered' && r.channel === 'sms')!.id;
+  for (const t of ['conversations', 'messages', 'turns', 'tool_calls']) {
+    const col = t === 'conversations' ? 'id' : 'conversation_id';
+    await db.sql.query(`update ${t} set created_at = now() - interval '30 hours' where ${col} = $1`, [moved]);
+  }
+  assert.equal((await summary(db, { hours: 24 })).conversations, 3);
+  assert.equal((await summary(db, { hours: 24, offsetHours: 24 })).conversations, 1);
+
+  const queue = await openHandoffs(db);
+  assert.equal(queue.length, 1);
+  assert.equal(queue[0].reason, 'angry_customer');
+  assert.equal(queue[0].contact, '+1•••0106');
+  assert.ok(queue[0].waitingMs >= 0);
+  assert.match(queue[0].lastCustomerMessage ?? '', /real person/);
+  await db.close();
+});

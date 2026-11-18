@@ -12,7 +12,7 @@
       "Policy edge"
     ]
   },
-  "currentVersion": "ab-05",
+  "currentVersion": "ab-03",
   "versions": [
     {
       "id": "baseline-v1",
@@ -173,46 +173,6 @@
         ],
         "source": "docs/results/ab-03-no-gap-filling.md"
       }
-    },
-    {
-      "id": "ab-05",
-      "label": "A/B 05",
-      "variant": "no-gap-filling-v6",
-      "date": "2026-11-18",
-      "run": "20261118T0104-no-gap-filling-v6-gemini-test-51ec",
-      "source": "docs/results/ab-05-variant-full-report.md",
-      "metrics": {
-        "resolution": [
-          43,
-          43
-        ],
-        "toolUse": [
-          43,
-          43
-        ],
-        "unnecessaryEscalations": [
-          0,
-          36
-        ],
-        "missedEscalations": [
-          0,
-          7
-        ],
-        "groundednessJudge": [
-          37,
-          38
-        ],
-        "latencyP50s": 2.02,
-        "latencyP95s": 4.1,
-        "tokensPerConversation": 5627
-      },
-      "groundednessHand": {
-        "value": [
-          37,
-          37
-        ],
-        "source": "docs/results/ab-05-no-gap-filling-v6.md"
-      }
     }
   ],
   "experiments": [
@@ -251,30 +211,6 @@
       "result": "Tool use 43/43 vs 42/43; the planted code was refused 4/4 and the 'is it lost' case was grounded 4/4. The one miss, policy-12, fails 2 of 4 runs on both prompts.",
       "decision": "Kept: no-gap-filling-v3 is the current default. Tokens -1.5%.",
       "doc": "docs/results/ab-03-no-gap-filling.md"
-    },
-    {
-      "id": "ab-04",
-      "title": "Hand off instead of a made-up \"no\"",
-      "variants": [
-        "no-gap-filling-v3",
-        "no-gap-filling-v5"
-      ],
-      "hypothesis": "When no policy covered a question, the agent sometimes invented a 'no' (\"we don't offer gift wrapping\") instead of handing off.",
-      "result": "policy-12 handed off cleanly 4/4 vs 2/4, and hand-checked groundedness reached 38/38. But the agent skipped the return-eligibility check on policy-01 in 2 of 4 runs vs 0 of 4.",
-      "decision": "Not shipped: a metric got worse. Live stayed on no-gap-filling-v3 until A/B 05 added a mandatory eligibility check.",
-      "doc": "docs/results/ab-04-no-gap-filling-v5.md"
-    },
-    {
-      "id": "ab-05",
-      "title": "Hand off instead of a made-up \"no\", with a mandatory eligibility check",
-      "variants": [
-        "no-gap-filling-v3",
-        "no-gap-filling-v6"
-      ],
-      "hypothesis": "A/B 04's hand-off line fixed the made-up 'no' but made the agent skip the return-eligibility check when the customer stated the dates. One more line makes the check mandatory.",
-      "result": "policy-12 handed off cleanly 4/4 vs 2/4, policy-01 called the eligibility check 4/4, and a new dev case that skipped it 4/4 on both v3 and v5 now passes. Hand-checked groundedness 37/37. Tokens +6%.",
-      "decision": "Shipped: no-gap-filling-v6 is the current default.",
-      "doc": "docs/results/ab-05-no-gap-filling-v6.md"
     }
   ],
   "failures": [
@@ -313,18 +249,6 @@
       "title": "reassurance with no source (\"it's not lost\")",
       "doc": "docs/failures/06-unsupported-reassurance.md",
       "fix": "Prompt change (A/B 03)"
-    },
-    {
-      "id": "07",
-      "title": "\"we don't offer that\" when no policy says so",
-      "doc": "docs/failures/07-made-up-no.md",
-      "fix": "Prompt change (A/B 05), after A/B 04's first fix caused a tool-use regression"
-    },
-    {
-      "id": "08",
-      "title": "the judge flagged the agent's own rule as a made-up claim",
-      "doc": "docs/failures/08-judge-flagged-the-agents-own-rule.md",
-      "fix": "Measurement change: the judge now sees the agent's instructions (judge v3)"
     }
   ]
 }

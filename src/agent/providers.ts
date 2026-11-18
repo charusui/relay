@@ -24,7 +24,7 @@ export function providerConfig(provider: Provider, modelOverride?: string): Prov
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
         apiKey: need('GEMINI_API_KEY', 'Get a free key at https://aistudio.google.com/apikey (no billing needed).'),
         modelId: modelOverride ?? need('RELAY_GEMINI_MODEL', 'Run `npm run models -- gemini` to list the model IDs your key can use, then set one.'),
-        rpm: Number(env('RELAY_GEMINI_RPM') ?? 8),
+        rpm: Number(env('RELAY_GEMINI_RPM') ?? 12), // free limit 15/min for 3.5 Flash Lite
         sanitizeSchema: stripAdditionalProperties,
       };
     case 'groq':

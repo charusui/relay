@@ -269,7 +269,13 @@ npm run shopify-check
 
 **Deployed** at https://relay-one-dun.vercel.app (Vercel Hobby + Neon Free, $0). Step-by-step setup, every environment variable, and the known unknowns: [docs/deploy.md](docs/deploy.md).
 
-- **Dashboard** (Next.js, `app/`): conversations, hand-off rate (agent vs safety net), failed messages, reply time p50/p95, tokens, daily charts with hover and table views, hand-off reasons, synthetic check history, alerts, recent conversations with full tool-call detail. Contacts are masked. Traffic is labelled `live`, `demo` or `synthetic`, and the page says plainly that there are no real customers.
+- **Dashboard** (Next.js 16, Tailwind CSS v4, shadcn/ui, Recharts; Vercel/Linear style, light and dark, phone-friendly). Seven pages behind a sidebar, with a shared time-range and traffic filter and a ⌘K search:
+  - **Overview:** KPI tiles with trend lines and change vs the previous period, conversations per day, reply time and tokens, the hand-off queue, the daily check history, recent conversations.
+  - **Conversations:** server-side search, outcome and channel filters, sorting and paging; each thread shows every tool call (input, result, duration), timings and the hand-off summary.
+  - **Hand-offs:** the read-only queue of conversations waiting for a person.
+  - **Evals:** the frozen-test scorecard, version history, A/B experiments and failure write-ups, readable in the app. The numbers come from `data/eval-results.json`, and a test checks each one against the committed report it cites.
+  - **Alerts** and **System:** alert history, rules and every daily check; model, prompt (read-only, canary redacted), database round trip, and which settings are set (never their values).
+  - Contacts are masked, traffic is labelled `live`, `demo` or `synthetic`, and a banner says plainly that there are no real customers. Before/after screenshots: [docs/screenshots/redesign/](docs/screenshots/redesign/).
 - **SMS webhook, deployed:** Twilio's format and signature checks. Twilio's free trial isn't offered in the Philippines, so demo texts are signed and sent by `npm run sms -- --deployed <url>` and the reply comes back in the TwiML. With a Twilio account, setting `TWILIO_ACCOUNT_SID` switches to answering Twilio at once and replying through its Messages API (Twilio stops waiting after about 15 s); both modes are tested, and retries never act twice.
 - **Daily synthetic check:** five dev-split conversations (never the frozen test set) through the real handler, graded by the eval grader, at 09:00 UTC (5 PM GMT+8, after the Gemini quota resets).
 - **Alert rules** to Slack, at most once per 6 hours each: failed messages over 20%, hand-offs over 50%, p95 reply time over 20 s, tokens per reply over 1.5x the 7-day average, any withheld reply, any failing synthetic case. These thresholds are starting points, not tuned values.
@@ -278,6 +284,7 @@ npm run shopify-check
 ```bash
 npm run synthetic -- --preview   # fill a throwaway preview database, offline
 npm run dev:preview              # dashboard on http://localhost:3200, no quota used
+npm run start:preview            # the production build on http://localhost:3201 (after npm run build)
 npm run build                    # the production build Vercel runs
 ```
 

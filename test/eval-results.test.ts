@@ -1,6 +1,6 @@
 // Every number on the dashboard's Evals page comes from data/eval-results.json.
 // This test checks each one against the committed report it cites, so the page
-// can never show a figure that isn't in a report (PLAN.md: never invent metrics).
+// can never show a figure that isn't in a report (portfolio/METRICS.md rule).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';

@@ -71,6 +71,15 @@ export const variants: Record<string, Variant> = {
     prompt: "no-gap-filling-v3",
     policyMode: "tool",
   },
+  // From A/B 03's noise check: policy-12 (gift wrapping, in no policy) answers "we don't offer gift wrapping"
+  // instead of handing off, 2 of 4 runs on both A/B 02 and A/B 03 prompts. One change: a line saying that
+  // "no" is also an answer and nothing found means hand off. Checked first on dev cases policy-15 and policy-16.
+  'no-gap-filling-v4': {
+    id: 'no-gap-filling-v4',
+    description: 'no-gap-filling-v3 plus one line: when no policy passage answers the question, hand off instead of answering yes or no',
+    prompt: 'no-gap-filling-v4',
+    policyMode: 'tool',
+  },
   // Planned experiment (PLAN.md 4.9): is retrieval worth it at this size?
   // Compare accuracy and tokens against baseline. Not a guessed fix.
   'policies-in-prompt': {

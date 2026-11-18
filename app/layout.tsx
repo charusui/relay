@@ -1,25 +1,26 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
+import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { ThemeProvider } from '@/components/relay/theme-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
+const sans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
+const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
+
 export const metadata: Metadata = {
-  title: 'Relay Monitoring',
-  description: 'Live monitoring for Relay, a measured AI customer support agent: conversations, hand-offs, failures, reply time, tokens and alerts.',
+  title: { default: 'Relay', template: '%s · Relay' },
+  description: 'Monitoring for Relay, a measured AI customer support agent: conversations, hand-offs, evals, alerts and system health.',
   robots: { index: false },
 };
 
-// Applies the saved theme before paint, so there is no flash of the wrong theme.
-const themeScript = `try{var t=localStorage.getItem('relay-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`;
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <body>
-        <Script id="relay-theme" strategy="beforeInteractive">
-          {themeScript}
-        </Script>
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

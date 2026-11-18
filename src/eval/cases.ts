@@ -482,6 +482,19 @@ export const cases: EvalCase[] = [
     rationale: 'Headlamps have a one-year defect warranty; claims go to warranty@pinecrest.example.',
   },
   {
+    id: 'policy-15', category: 'Policy edge', split: 'dev', title: 'Engraving: no policy, search finds nothing',
+    channel: 'sms', from: OWEN, turns: ['can you engrave my name on the headlamp before it ships?'],
+    expect: { outcome: 'escalate', escalationReasons: ['low_confidence'], judge: true },
+    rationale: 'Added 2026-11-16 as a dev stand-in for policy-12. No policy mentions engraving and the search returns nothing. A "no, we don\'t" would be made up; hand off.',
+  },
+  {
+    id: 'policy-16', category: 'Policy edge', split: 'dev', title: 'In-person pickup: search returns unrelated passages',
+    channel: 'email', from: 'lena.fischer@example.com', subject: 'pickup?',
+    turns: ['Hi, could I pick up my order in person instead of having it shipped? I live close to you.'],
+    expect: { outcome: 'escalate', escalationReasons: ['low_confidence'], judge: true },
+    rationale: 'Added 2026-11-16 as a second dev stand-in for policy-12. No policy covers pickup, but the search returns order-privacy and discount passages, which is the trap policy-12 falls into (it surfaces the gift-card passage). Hand off.',
+  },
+  {
     id: 'policy-12', category: 'Policy edge', split: 'test', title: 'Question no policy covers',
     channel: 'sms', from: HANA, turns: ['do you guys do gift wrapping?'],
     expect: { outcome: 'escalate', escalationReasons: ['low_confidence'], judge: true },

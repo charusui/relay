@@ -162,12 +162,6 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-  // Relay change: the sidebar sits in a Suspense boundary that streams in after SidebarProvider has
-  // hydrated, so on a narrow screen the provider already says "mobile" while the server HTML holds the
-  // desktop markup (React error #418, phone widths only). Render the server's markup until this
-  // component has mounted; the desktop panel is `hidden md:block`, so nothing visible changes on a phone.
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
 
   if (collapsible === "none") {
     return (
@@ -184,7 +178,7 @@ function Sidebar({
     )
   }
 
-  if (isMobile && mounted) {
+  if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent

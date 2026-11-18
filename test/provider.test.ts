@@ -98,3 +98,37 @@ test('rpm cap: a burst up to the cap goes out at once, the next call waits for t
   assert.ok(totalMs >= 380, `third call should wait for the window (total ${totalMs} ms)`);
   assert.ok(c.waitMs > 0);
 });
+
+const malformed = {
+  model: 'fake-model',
+  choices: [{ finish_reason: 'function_call_filter: MALFORMED_FUNCTION_CALL', message: { content: null } }],
+  usage: { prompt_tokens: 100, completion_tokens: 0 },
+};
+
+test('a malformed Gemini tool call is retried once; tokens from both attempts are counted', async () => {
+  const srv = await fakeServer([
+    { status: 200, body: malformed },
+    { status: 200, body: toolReply },
+  ]);
+  const m = new OpenAIChatModel({ provider: 'fake', baseUrl: srv.url, modelId: 'm', rpm: 0 });
+  const r = await m.create({ system: 's', context: 'c', tools: [], messages: [{ role: 'user', content: 'hi' }] });
+  srv.close();
+  assert.equal(srv.seen.length, 2);
+  assert.equal(r.stopReason, 'tool_use');
+  assert.equal(r.usage.inputTokens, 100 + 120 - 20);
+  assert.equal(r.usage.cacheReadTokens, 20);
+});
+
+test('two malformed calls in a row are returned as is (the agent loop then hands off safely)', async () => {
+  const srv = await fakeServer([
+    { status: 200, body: malformed },
+    { status: 200, body: malformed },
+    { status: 200, body: toolReply },
+  ]);
+  const m = new OpenAIChatModel({ provider: 'fake', baseUrl: srv.url, modelId: 'm', rpm: 0 });
+  const r = await m.create({ system: 's', context: 'c', tools: [], messages: [{ role: 'user', content: 'hi' }] });
+  srv.close();
+  assert.equal(srv.seen.length, 2);
+  assert.equal(r.content.length, 0);
+  assert.match(String(r.stopReason), /MALFORMED_FUNCTION_CALL/);
+});

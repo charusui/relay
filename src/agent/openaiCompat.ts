@@ -164,6 +164,11 @@ export class OpenAIChatModel implements ModelClient {
     };
 
     let waitMs = 0;
+    // Gemini sometimes ends a turn with finish_reason "...MALFORMED_FUNCTION_CALL" and no content:
+    // it tried to call a tool and produced something unparseable. One retry of the same request
+    // usually recovers; a second one in a row is returned as is, and the loop hands off safely.
+    let malformedRetries = 0;
+    const spent = { input: 0, output: 0, cached: 0 };
     for (let attempt = 1; ; attempt++) {
       waitMs += await this.throttle();
       const t0 = Date.now();
@@ -239,6 +244,14 @@ export class OpenAIChatModel implements ModelClient {
         } as unknown as Anthropic.ContentBlock);
       }
       const hasTools = content.some((b) => b.type === 'tool_use');
+      if (!content.length && /MALFORMED_FUNCTION_CALL/i.test(String(choice?.finish_reason ?? '')) && malformedRetries < 1) {
+        malformedRetries++;
+        // The failed attempt still used tokens: count them so cost reporting stays honest.
+        spent.input += data.usage?.prompt_tokens ?? 0;
+        spent.output += data.usage?.completion_tokens ?? 0;
+        spent.cached += data.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+        continue;
+      }
       return {
         content,
         stopReason: hasTools ? 'tool_use' : (STOP_MAP[choice?.finish_reason] ?? choice?.finish_reason ?? null),
@@ -248,9 +261,9 @@ export class OpenAIChatModel implements ModelClient {
         // OpenAI-style prompt_tokens includes cached tokens; split them out so
         // inputTokens means "uncached input" for every provider.
         usage: {
-          inputTokens: (data.usage?.prompt_tokens ?? 0) - (data.usage?.prompt_tokens_details?.cached_tokens ?? 0),
-          outputTokens: data.usage?.completion_tokens ?? 0,
-          cacheReadTokens: data.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+          inputTokens: spent.input + (data.usage?.prompt_tokens ?? 0) - spent.cached - (data.usage?.prompt_tokens_details?.cached_tokens ?? 0),
+          outputTokens: spent.output + (data.usage?.completion_tokens ?? 0),
+          cacheReadTokens: spent.cached + (data.usage?.prompt_tokens_details?.cached_tokens ?? 0),
           cacheWriteTokens: 0,
         },
       };

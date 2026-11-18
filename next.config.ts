@@ -10,7 +10,7 @@ const config: NextConfig = {
   serverExternalPackages: ['@electric-sql/pglite', 'pg'],
   // Files the agent reads at runtime: policies, prompts and the price table.
   outputFileTracingIncludes: {
-    '/**': ['./data/policies/**', './data/prices.json', './src/agent/prompts/**'],
+    '/**': ['./data/policies/**', './data/prices.json', './src/agent/prompts/**', './docs/results/*.md', './docs/failures/*.md'],
   },
   poweredByHeader: false,
 };
