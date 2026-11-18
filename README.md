@@ -4,25 +4,27 @@ A tool-calling customer support agent for an ecommerce store, built to be measur
 
 Everything runs for **$0**: free AI tiers (Gemini or Groq), a local SMS/email simulator, and Postgres running in-process (PGlite). The store is a fictional mock ("Pinecrest Supply"), so results are **eval results on scripted conversations, not production metrics**.
 
-> Status: **milestone 1 complete**: measured, hand-checked, five real failures written up, one A/B decision, and a release check of the shipped configuration. **Milestone 2 complete**: SMS webhook (Twilio format, tested locally), Slack hand-off alerts (live), and a real Shopify dev store (live, verified end to end). **Milestone 3 in progress**: monitoring dashboard, alerts and the SMS webhook are live at https://relay-one-dun.vercel.app ([docs/deploy.md](docs/deploy.md)); the demo video is still to do. See [PLAN.md](PLAN.md) for the plan and the change log.
+> Status: **milestone 1 complete**: measured, hand-checked, eight real failures written up, five A/B decisions, and a release check of the shipped configuration. **Milestone 2 complete**: SMS webhook (Twilio format, tested locally), Slack hand-off alerts (live), and a real Shopify dev store (live, verified end to end). **Milestone 3 in progress**: monitoring dashboard, alerts and the SMS webhook are live at https://relay-one-dun.vercel.app ([docs/deploy.md](docs/deploy.md)); the demo video is still to do. See [PLAN.md](PLAN.md) for the plan and the change log.
 
 ## Latest results (43 frozen test conversations, every one hand-checked)
 
-| Metric | Baseline v1 | Release v1 | A/B 02 | **A/B 03 (current)** |
-|---|---|---|---|---|
-| Resolution accuracy | 97.7% (42/43) | 97.7% (42/43) | 100% (43/43) | **97.7% (42/43)** |
-| Correct tool use | 97.7% (42/43) | 97.7% (42/43) | 97.7% (42/43) | **100% (43/43)** |
-| Unnecessary escalations | 2.8% (1/36) | 0% (0/36) | 0% (0/36) | **0% (0/36)** |
-| Missed escalations | 0% (0/7) | 0% (0/7) | 0% (0/7) | **14.3% (1/7)** |
-| Groundedness, judge | 97.6% (40/41) | 97.5% (39/40) | 100% (42/42), see notes | 97.6% (40/41) |
-| Groundedness, hand-checked | 97.6% (40/41) | 97.5% (39/40) | 95.0% (38/40) | **97.4% (38/39)** |
-| Latency p50 / p95 | 3.26 s / 5.86 s | 3.0 s / 5.7 s (fresh quota; see notes) | 3.8 s / 11.5 s | 2.8 s / 6.0 s |
-| Tokens per conversation | 4,849 | 5,205 | 5,374 | 5,294 |
+| Metric | Baseline v1 | Release v1 | A/B 02 | A/B 03 | **A/B 05 (current)** |
+|---|---|---|---|---|---|
+| Resolution accuracy | 97.7% (42/43) | 97.7% (42/43) | 100% (43/43) | 97.7% (42/43) | **100% (43/43)** |
+| Correct tool use | 97.7% (42/43) | 97.7% (42/43) | 97.7% (42/43) | 100% (43/43) | **100% (43/43)** |
+| Unnecessary escalations | 2.8% (1/36) | 0% (0/36) | 0% (0/36) | 0% (0/36) | **0% (0/36)** |
+| Missed escalations | 0% (0/7) | 0% (0/7) | 0% (0/7) | 14.3% (1/7) | **0% (0/7)** |
+| Groundedness, judge | 97.6% (40/41) | 97.5% (39/40) | 100% (42/42), see notes | 97.6% (40/41) | 97.4% (37/38), one false alarm |
+| Groundedness, hand-checked | 97.6% (40/41) | 97.5% (39/40) | 95.0% (38/40) | 97.4% (38/39) | **100% (37/37)** |
+| Latency p50 / p95 | 3.26 s / 5.86 s | 3.0 s / 5.7 s (fresh quota; see notes) | 3.8 s / 11.5 s | 2.8 s / 6.0 s | 2.0 s / 4.1 s |
+| Tokens per conversation | 4,849 | 5,205 | 5,374 | 5,294 | 5,627 |
 
 - **Release v1:** the `policy-before-handoff` prompt (A/B 01), the retrieval fix (failure 04) and the output guard (failure 05).
 - **A/B 02:** release v1 plus one prompt line that makes the agent state the refund amount and next steps exactly as the tool gives them (`state-tool-outcome`). Return replies now include the amount 12/12, against 2/9 before. Hand-checked groundedness is down one case (within noise, in conversations the change doesn't touch; details in the A/B 02 write-up).
-- **A/B 03 (current)** is what Relay ships with: A/B 02 plus lines that stop the agent applying a discount code it read in an order note and stop it telling customers a package "isn't lost" (`no-gap-filling-v3`). Its one miss, `policy-12` (a made-up "we don't offer gift wrapping"), fails at the same rate on A/B 02 (2 of 4 runs each), so it is an existing weakness, not a new one.
-- **Agent:** Gemini 3.5 Flash Lite (free tier). **Judge:** Gemini 3.1 Flash Lite, a different model. It agreed with the hand check on 84 of 86 conversations in A/B 01, but on the release v1 and A/B 02 runs it caught 0 of the 3 problems the hand check found and raised 1 false alarm. Treat the hand-checked row as the real number; the judge is a first pass.
+- **A/B 03:** A/B 02 plus lines that stop the agent applying a discount code it read in an order note and stop it telling customers a package "isn't lost" (`no-gap-filling-v3`). Its one miss, `policy-12` (a made-up "we don't offer gift wrapping"), failed 2 of 4 runs on both A/B 02 and A/B 03.
+- **A/B 04 (not shipped):** a line telling the agent to hand off instead of answering when no policy covers the question fixed `policy-12`, but made it skip the return-eligibility check on `policy-01` in 2 of 4 runs.
+- **A/B 05 (current)** is what Relay ships with: A/B 04's line plus one that makes the eligibility check mandatory (`no-gap-filling-v6`). `policy-12` handed off cleanly 4 of 4 times and `policy-01` called the check 4 of 4 times. Tokens +6%. The judge's one flag is the agent stating its own discount-code rule, not a claim about the store.
+- **Agent:** Gemini 3.5 Flash Lite (free tier). **Judge:** Gemini 3.1 Flash Lite, a different model. Measured against the hand check on 258 labelled conversations (`npm run judge-agreement`), it catches only 2 of 5 real problems. Since 2026-11-18 it sees the agent's own instructions ([judge v3](docs/results/judge-v3.md)), which cut false alarms from 3 to 1 and removed a recurring one (under v3, A/B 05's run judges 38/38; the table keeps the v2 verdicts it was published with). Treat the hand-checked row as the real number; the judge is a first pass.
 - **Cost and latency:** actual cost is $0. Latency is on a free tier with rate-limit waits excluded; release v1's p95 across all messages is 19 s, because part of the run happened while the daily quota was nearly used up.
 - These are eval results from one run per configuration on a fictional store's scripted conversations, not production metrics. One case = 2.3 points.
 
@@ -33,12 +35,18 @@ Everything runs for **$0**: free AI tiers (Gemini or Groq), a local SMS/email si
 - [A/B 01: why the default changed](docs/results/ab-01-policy-before-handoff.md)
 - [A/B 02: stating the tool's outcome](docs/results/ab-02-state-tool-outcome.md)
 - [A/B 03: no gap filling](docs/results/ab-03-no-gap-filling.md)
+- [A/B 04: hand off instead of a made-up "no" (not shipped)](docs/results/ab-04-no-gap-filling-v5.md)
+- [A/B 05: the same, with a mandatory eligibility check](docs/results/ab-05-no-gap-filling-v6.md)
 - Real failures:
   - [01 unnecessary hand-off](docs/failures/01-unnecessary-handoff-address-change.md)
   - [02 order-note injection](docs/failures/02-order-note-injection.md)
   - [03 made-up tracking fact](docs/failures/03-made-up-tracking-fact.md)
   - [04 retrieval stemmer](docs/failures/04-retrieval-stemmer.md)
   - [05 model leaked its reasoning](docs/failures/05-model-leaked-its-reasoning.md)
+  - [06 unsupported reassurance](docs/failures/06-unsupported-reassurance.md)
+  - [07 made-up "no"](docs/failures/07-made-up-no.md)
+  - [08 the judge flagged the agent's own rule](docs/failures/08-judge-flagged-the-agents-own-rule.md)
+- [Judge v3: measured against the hand check](docs/results/judge-v3.md)
 
 ## How it works
 
@@ -207,7 +215,9 @@ Variants live in [src/agent/variants.ts](src/agent/variants.ts). `DEFAULT_VARIAN
 - `policy-before-handoff`: default from A/B 01 until A/B 02
 - `state-tool-outcome`: default from A/B 02 until A/B 03
 - `no-gap-filling`, `-v2`: development steps toward v3 (see A/B 03)
-- `no-gap-filling-v3`: **current default** (A/B 03)
+- `no-gap-filling-v3`: default from A/B 03 until A/B 05
+- `no-gap-filling-v4`, `-v5`: development steps toward v6 (v5 was A/B 04, not shipped)
+- `no-gap-filling-v6`: **current default** (A/B 05)
 - `policies-in-prompt`: a planned experiment on whether retrieval is worth it at this size
 
 New variants should come from a real failure (see [docs/failures/TEMPLATE.md](docs/failures/TEMPLATE.md)).

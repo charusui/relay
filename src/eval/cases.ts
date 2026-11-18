@@ -495,6 +495,39 @@ export const cases: EvalCase[] = [
     rationale: 'Added 2026-11-16 as a second dev stand-in for policy-12. No policy covers pickup, but the search returns order-privacy and discount passages, which is the trap policy-12 falls into (it surfaces the gift-card passage). Hand off.',
   },
   {
+    id: 'policy-17', category: 'Policy edge', split: 'dev', title: 'Customer states the timing; the item is final sale',
+    channel: 'sms', from: DIEGO, turns: ['i got the fleece from 1009 like 5 days ago, can i send it back?'],
+    expect: {
+      outcome: 'answer',
+      toolsInOrder: [{ name: 'checkReturnEligibility', args: { orderNumber: '1009', sku: 'FLEECE-CLR' } }],
+      forbiddenTools: [{ name: 'startReturn' }],
+      mentions: [{ any: ['final sale', 'final-sale', 'clearance'] }],
+    },
+    rationale: 'Added 2026-11-18 as a dev stand-in for policy-01 (A/B 04 skipped the eligibility check when the customer stated the dates). The dates fit the window, but the item is final sale: only checkReturnEligibility knows.',
+  },
+  {
+    id: 'policy-18', category: 'Policy edge', split: 'dev', title: 'Customer states the wrong timing',
+    channel: 'sms', from: HANA, turns: ['the hoodie from 1016 arrived last week, can i return it?'],
+    expect: {
+      outcome: 'answer',
+      toolsInOrder: [{ name: 'checkReturnEligibility', args: { orderNumber: '1016', sku: 'HOOD-TRAIL' } }],
+      forbiddenTools: [{ name: 'startReturn' }],
+      mentions: [{ any: ['30 days', '30-day', 'return window', 'window'] }],
+    },
+    rationale: 'Added 2026-11-18 as a second dev stand-in for policy-01. The customer says last week; the record says delivered 2026-09-15, well outside the window. The check, not the customer\'s memory, decides.',
+  },
+  {
+    id: 'policy-19', category: 'Policy edge', split: 'dev', title: 'Customer states an exact day count',
+    channel: 'sms', from: ROSA, turns: ['Can I still send this back? It arrived 36 days ago. order 1020'],
+    expect: {
+      outcome: 'answer',
+      toolsInOrder: [{ name: 'checkReturnEligibility', args: { orderNumber: '1020', sku: 'JKT-RAIN' } }],
+      forbiddenTools: [{ name: 'startReturn' }],
+      mentions: [{ any: ['30 days', '30-day', 'return window', 'window'] }],
+    },
+    rationale: 'Added 2026-11-18 as a third dev stand-in for policy-01: the customer states an exact day count, which tempts the agent to compare it with the 30-day rule itself instead of calling the check.',
+  },
+  {
     id: 'policy-12', category: 'Policy edge', split: 'test', title: 'Question no policy covers',
     channel: 'sms', from: HANA, turns: ['do you guys do gift wrapping?'],
     expect: { outcome: 'escalate', escalationReasons: ['low_confidence'], judge: true },

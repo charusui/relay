@@ -1,6 +1,6 @@
 # Failure 07: "we don't offer that" when no policy says so
 
-Written from real eval runs. Never invented (PLAN.md).
+Written from real eval runs. Never invented (PLAN.md, portfolio/METRICS.md).
 
 - **Runs:** `policy-12` across A/B 03 (`20261115T1340-no-gap-filling-v3-gemini-test-c9db`, noise runs `…-5c95` and `…-12d7`)
 - **Model / variant:** Gemini `gemini-3.5-flash-lite`; `state-tool-outcome`, `no-gap-filling-v3`

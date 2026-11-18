@@ -10,7 +10,7 @@ import path from 'node:path';
 import type { ModelClient } from '../agent/model.ts';
 import { QuotaExhaustedError } from '../agent/openaiCompat.ts';
 import { addUsage, paidEquivalentUsd, totalTokens, zeroUsage, type TokenUsage } from '../agent/pricing.ts';
-import { getVariant } from '../agent/variants.ts';
+import { buildSystemPrompt, getVariant } from '../agent/variants.ts';
 import { RETRIEVAL_VERSION } from '../policy/retrieval.ts';
 import { RelayDb } from '../db/db.ts';
 import { handleInbound } from '../handler.ts';
@@ -234,7 +234,7 @@ async function runCase(c: EvalCase, rep: number, meta: RunMeta, opts: RunOptions
 
   const scores = scoreCase(c, turns);
   const scope = meta.judgeScope ?? 'marked';
-  const judge = opts.judge && (scope === 'all' || c.expect.judge) ? await judgeConversation(opts.judge, turns) : undefined;
+  const judge = opts.judge && (scope === 'all' || c.expect.judge) ? await judgeConversation(opts.judge, turns, { agentInstructions: buildSystemPrompt(variant) }) : undefined;
   return {
     caseId: c.id,
     category: c.category,

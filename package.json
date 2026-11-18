@@ -19,6 +19,7 @@
     "eval": "tsx src/eval/run.ts",
     "ab": "tsx src/eval/ab.ts",
     "rejudge": "tsx src/eval/rejudge.ts",
+    "judge-agreement": "tsx src/eval/judge-agreement.ts",
     "rescore": "tsx src/eval/rescore.ts",
     "test": "tsx --test --test-force-exit test/*.test.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.next.json",

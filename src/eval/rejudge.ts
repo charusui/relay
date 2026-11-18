@@ -13,6 +13,7 @@ import { describeModelError } from '../agent/model.ts';
 import { createJudgeModel } from '../agent/providers.ts';
 import { cases } from './cases.ts';
 import { judgeConversation } from './judge.ts';
+import { buildSystemPrompt, getVariant } from '../agent/variants.ts';
 import { fmtRatio, summarize, writeReport } from './report.ts';
 import { loadRun, runDir } from './runner.ts';
 
@@ -30,11 +31,12 @@ try {
   const judge = createJudgeModel();
   if (judge.provider === meta.provider) console.warn(`Note: judge and agent share a provider (${judge.provider}).`);
   const scope = values.scope === 'marked' ? 'marked' : 'all';
+  const agentInstructions = buildSystemPrompt(getVariant(meta.variant));
   const todo = results.filter((r) => r.scores && (scope === 'all' || cases.find((c) => c.id === r.caseId)?.expect.judge));
   console.log(`Re-judging ${todo.length} conversation(s) of ${runId} with ${judge.provider}:${judge.modelId}...`);
   let n = 0;
   for (const r of todo) {
-    r.judge = await judgeConversation(judge, r.turns);
+    r.judge = await judgeConversation(judge, r.turns, { agentInstructions });
     appendFileSync(path.join(runDir(runId), 'results.jsonl'), `${JSON.stringify(r)}\n`); // later lines win
     n++;
     const j = r.judge;

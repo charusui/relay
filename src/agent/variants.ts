@@ -20,7 +20,7 @@ export type Variant = {
 };
 
 /** The variant that chat, evals and A/B use unless told otherwise. Changed only by an A/B decision (see PLAN.md). */
-export const DEFAULT_VARIANT = 'no-gap-filling-v3'; // 2026-11-15, A/B 03 (docs/results/ab-03-no-gap-filling.md); before: state-tool-outcome (A/B 02), policy-before-handoff (A/B 01)
+export const DEFAULT_VARIANT = 'no-gap-filling-v6'; // 2026-11-18, A/B 05 (docs/results/ab-05-no-gap-filling-v6.md); before: no-gap-filling-v3 (A/B 03), state-tool-outcome (A/B 02), policy-before-handoff (A/B 01)
 
 export const variants: Record<string, Variant> = {
   baseline: {
@@ -78,6 +78,23 @@ export const variants: Record<string, Variant> = {
     id: 'no-gap-filling-v4',
     description: 'no-gap-filling-v3 plus one line: when no policy passage answers the question, hand off instead of answering yes or no',
     prompt: 'no-gap-filling-v4',
+    policyMode: 'tool',
+  },
+  // v4 dev pilot (20261117T1319-no-gap-filling-v4-gemini-dev-5452): handed off 6/6, but 4 of 6 replies still said
+  // "we don't offer that" before the hand-off. One change: the hand-off reply must not answer the question at all.
+  'no-gap-filling-v5': {
+    id: 'no-gap-filling-v5',
+    description: 'no-gap-filling-v3 plus one line: when no policy passage answers it, hand off and say only that a teammate will reply',
+    prompt: 'no-gap-filling-v5',
+    policyMode: 'tool',
+  },
+  // A/B 04 (not shipped): v5 skipped checkReturnEligibility on policy-01 in 2 of 4 runs when the customer stated the
+  // dates. One change on top of v5: the eligibility check is mandatory before any "can I return it" answer.
+  // Checked first on dev cases policy-17 and policy-18.
+  'no-gap-filling-v6': {
+    id: 'no-gap-filling-v6',
+    description: 'no-gap-filling-v5 plus one line: always call checkReturnEligibility before saying whether an item can be returned',
+    prompt: 'no-gap-filling-v6',
     policyMode: 'tool',
   },
   // Planned experiment (PLAN.md 4.9): is retrieval worth it at this size?
