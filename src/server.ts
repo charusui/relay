@@ -105,7 +105,7 @@ if (isMain) {
   let token = process.env.TWILIO_AUTH_TOKEN?.trim();
   if (!token) {
     if (publicUrl || values.host !== '127.0.0.1') {
-      console.error('TWILIO_AUTH_TOKEN must be set when the server is reachable from outside this machine. Put it in relay/.env.');
+      console.error('TWILIO_AUTH_TOKEN must be set when the server is reachable from outside this machine. Put it in .env.');
       process.exit(1);
     }
     token = LOCAL_DEV_TWILIO_TOKEN;

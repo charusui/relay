@@ -300,7 +300,7 @@ npm run build                    # the production build Vercel runs
 
 ## Accounts you set up last
 
-Everything above works without these. Each one is free, needs no card, and takes a few minutes. Put the values in `relay/.env` yourself (template: `.env.example`).
+Everything above works without these. Each one is free, needs no card, and takes a few minutes. Put the values in `.env` yourself (template: `.env.example`).
 
 1. **Slack** (about 5 minutes; checked against Slack's screens on 2026-11-15):
    1. Create a free Slack workspace and a channel such as **#relay-handoffs** (private is best: alerts include customer contact details).

@@ -6,7 +6,7 @@ Everything here is free with no card: Vercel Hobby (app, dashboard, SMS webhook,
 
 **Status (2026-11-15, 9:10 PM GMT+8): deployed** at https://relay-one-dun.vercel.app (Vercel project `relay`, team charusuis-projects; Neon project `relay`, AWS us-east-1). Functions run in `iad1`; a database round trip from the function takes about 1.2 ms (`/api/health` reports it). First live results: a tracking text answered from the Shopify dev store, a hand-off, a forged signature rejected (403), the cron route refusing callers without the secret (401). Both Gemini keys then hit their 500/day limit, so live texts get the fallback reply until the quota resets at 4 PM GMT+8; the failed synthetic checks and one real `error_rate` alert (sent to Slack) from that are on the dashboard. Live replies took 8 to 16 s, of which only 1.2 to 3.6 s was work: the rest was Relay's own pacing (`RELAY_GEMINI_RPM=8` spaces model calls about 7.5 s apart).
 
-**Deployed with Charles's go-ahead on 2026-11-15** ("do the rest urself including npx stuff"). The code is built and tested locally (`npm test`, `npm run build`, and production-mode checks of both webhook modes). Secrets are pasted by Charles into Vercel's dashboard and his own `.env`; they never go in a file Claude writes or in the repo.
+**Deployed with Charles's go-ahead on 2026-11-15.** The code is built and tested locally (`npm test`, `npm run build`, and production-mode checks of both webhook modes). Secrets are pasted by Charles into Vercel's dashboard and his own `.env`; they never go in a file Claude writes or in the repo.
 
 ## What it looks like when deployed
 
@@ -22,17 +22,17 @@ Free-plan limits that shaped this: Vercel Hobby functions run at most 300 s and 
 
 ## Everything Charles will need to do (all free, in this order)
 
-Keep the values in a private note **outside** the `newportfolio` folder, labelled with the names below, and delete it once they're in Vercel.
+Keep the values in a private note **outside** the project folder, labelled with the names below, and delete it once they're in Vercel.
 
 1. **A second Gemini key, in a new project** (`GEMINI_API_KEY`). Google's free daily limit is per *project* per model (the quota id in Gemini's own 429 response is `GenerateRequestsPerDayPerProjectPerModel-FreeTier`), so a key in a new project gets its own 500/day and live traffic never eats the eval quota. Google AI Studio: Get API key, Create API key, create it in a **new project** named `relay-live`.
 2. **Neon project** (`DATABASE_URL`). Name `relay`, region **AWS US East 1 (N. Virginia)**, only Postgres turned on. Connect, connection pooling **on**, copy the string (starts `postgresql://`, contains `-pooler`).
 3. **Two random secrets** (`CRON_SECRET` and `TWILIO_AUTH_TOKEN`). Run this twice in a terminal and keep both outputs:
    `node -e "console.log(crypto.randomUUID())"`
-   `TWILIO_AUTH_TOKEN` here is not from Twilio: it's the shared secret your PC signs demo texts with and the deployed app checks. It goes in **two** places: Vercel and your own `relay/.env`.
+   `TWILIO_AUTH_TOKEN` here is not from Twilio: it's the shared secret your PC signs demo texts with and the deployed app checks. It goes in **two** places: Vercel and your own `.env`.
 4. **Vercel login**: run `npx vercel login` and log in in the browser with your portfolio account.
-5. **Say "create the project"**: Claude links `relay/` to a new, empty Vercel project (separate from the portfolio). Nothing is public yet.
+5. **Say "create the project"**: Claude links the project to a new, empty Vercel project (separate from the portfolio). Nothing is public yet.
 6. **Paste the environment variables** into Vercel: the relay project, Settings, Environment Variables, Production. Table below.
-7. **Say "deploy"**: Claude deploys and gives you the link. Add `RELAY_PUBLIC_URL` (that link) in Vercel and in `relay/.env`, then Claude redeploys once.
+7. **Say "deploy"**: Claude deploys and gives you the link. Add `RELAY_PUBLIC_URL` (that link) in Vercel and in `.env`, then Claude redeploys once.
 8. **Try it**: `npm run sms -- --deployed https://<your-link> "where is my order 1042?"` prints Relay's reply, the conversation appears on the dashboard, and a hand-off posts to Slack.
 
 ## Environment variables for Vercel (Production)
@@ -46,10 +46,10 @@ Keep the values in a private note **outside** the `newportfolio` folder, labelle
 | `RELAY_GEMINI_RPM` | `8` | |
 | `RELAY_MAX_RATE_LIMIT_WAIT_MS` | `60000` | Wait at most 1 min for a rate limit, then send the fallback reply (functions stop at 300 s) |
 | `CRON_SECRET` | random secret 1 | Vercel sends it to the cron route automatically |
-| `TWILIO_AUTH_TOKEN` | random secret 2 | The same value goes in `relay/.env` so `npm run sms -- --deployed` can sign |
+| `TWILIO_AUTH_TOKEN` | random secret 2 | The same value goes in `.env` so `npm run sms -- --deployed` can sign |
 | `RELAY_PUBLIC_URL` | `https://<your-project>.vercel.app` | Known after the first deploy; add it, then redeploy |
-| `SLACK_WEBHOOK_URL` | your existing Slack webhook (from `relay/.env`) | Hand-off alerts and monitoring alerts |
-| `RELAY_STORE` | `shopify` (or leave unset for the mock store) | With `shopify`, also add `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` from `relay/.env`. The mock store resets on every request on Vercel, so returns don't persist there |
+| `SLACK_WEBHOOK_URL` | your existing Slack webhook (from `.env`) | Hand-off alerts and monitoring alerts |
+| `RELAY_STORE` | `shopify` (or leave unset for the mock store) | With `shopify`, also add `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` from `.env`. The mock store resets on every request on Vercel, so returns don't persist there |
 
 Leave unset: `TWILIO_ACCOUNT_SID` (no Twilio account), `RELAY_SMS_TRAFFIC` (inbound texts are labelled `demo`), `GROQ_*` and `RELAY_JUDGE_*` (evals run on your PC), `RELAY_DB_DIR`.
 

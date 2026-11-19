@@ -10,7 +10,7 @@ export const RETURN_WINDOW_DAYS = 30;
 /** Safety limit on model calls for a single inbound message. */
 export const MAX_AGENT_STEPS = 8;
 
-/** Load relay/.env if present (Node's built-in loader; no dotenv dependency). */
+/** Load .env if present (Node's built-in loader; no dotenv dependency). */
 export function loadEnv() {
   try {
     process.loadEnvFile('.env');

@@ -81,7 +81,7 @@ export class AnthropicModel implements ModelClient {
 
 /** Short, actionable message for any model error (no secrets, no stack). */
 export function describeModelError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return 'Authentication failed: check ANTHROPIC_API_KEY in relay/.env.';
+  if (err instanceof Anthropic.AuthenticationError) return 'Authentication failed: check ANTHROPIC_API_KEY in .env.';
   if (err instanceof Anthropic.BadRequestError && /credit balance/i.test(err.message)) {
     return 'Anthropic API credit balance is too low (the Claude API is billed separately from Claude Pro). Use a free provider instead.';
   }

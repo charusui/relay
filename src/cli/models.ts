@@ -18,7 +18,7 @@ try {
   const ids = await client.listModels();
   console.log(`${ids.length} models available to your ${provider} key:\n`);
   for (const id of ids) console.log(`  ${id}`);
-  console.log(`\nSet one in relay/.env as RELAY_${provider.toUpperCase()}_MODEL=<id>. Pick one that supports tool (function) calling.`);
+  console.log(`\nSet one in .env as RELAY_${provider.toUpperCase()}_MODEL=<id>. Pick one that supports tool (function) calling.`);
 } catch (err) {
   console.error((err as Error).message);
   process.exit(1);

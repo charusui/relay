@@ -1,4 +1,4 @@
-// Pick the model client from the environment (relay/.env). All free options
+// Pick the model client from the environment (.env). All free options
 // first; Anthropic is supported but paid and off by default.
 
 import { AnthropicModel, type ModelClient } from './model.ts';
@@ -12,7 +12,7 @@ const env = (k: string) => process.env[k]?.trim() || undefined;
 
 function need(key: string, hint: string): string {
   const v = env(key);
-  if (!v) throw new Error(`${key} is not set in relay/.env. ${hint}`);
+  if (!v) throw new Error(`${key} is not set in .env. ${hint}`);
   return v;
 }
 

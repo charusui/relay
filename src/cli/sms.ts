@@ -29,7 +29,7 @@ const { values, positionals } = parseArgs({
 });
 const deployedBase = values.deployed?.trim().replace(/\/$/, '');
 if (deployedBase && !process.env.TWILIO_AUTH_TOKEN?.trim()) {
-  console.error('--deployed needs TWILIO_AUTH_TOKEN in relay/.env: the same signing secret you put in Vercel.');
+  console.error('--deployed needs TWILIO_AUTH_TOKEN in .env: the same signing secret you put in Vercel.');
   process.exit(1);
 }
 const targetUrl = deployedBase ? `${deployedBase}/api/twilio/sms` : values.url!;

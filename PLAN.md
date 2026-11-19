@@ -51,10 +51,9 @@ Everything else supports those four.
 - **$0 budget.** No paid APIs, no paid SMS, no card on file anywhere. Every part uses a free tier or runs locally.
 - The Claude API is not included in the $20 Claude Pro plan, so Relay must not depend on it. The Anthropic adapter stays in the code, unused, in case credits appear later.
 - Charles's PC has 8 GB RAM and no GPU, so local models (Ollama) are a weak fallback only.
-- Stay inside `C:\Users\duvey\Downloads\newportfolio`. Don't touch Vercel or GitHub, and don't commit unless Charles asks.
-- Never invent metrics. Only real eval output may fill the portfolio's pending slots, following `portfolio/METRICS.md`.
-- Never type API keys. Charles puts them in `relay/.env` himself; `.env.example` holds placeholders.
-- Don't edit `portfolio/` from the Relay work. The case-study update is a separate step.
+- Don't deploy, push or commit unless Charles asks.
+- Never invent metrics. Only real eval output may fill the portfolio's pending slots.
+- Never type API keys. Charles puts them in `.env` himself; `.env.example` holds placeholders.
 
 ## 3. Decisions
 

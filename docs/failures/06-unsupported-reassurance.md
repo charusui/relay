@@ -1,6 +1,6 @@
 # Failure 06: reassurance with no source ("it's not lost")
 
-Written from real eval runs. Never invented (PLAN.md, portfolio/METRICS.md).
+Written from real eval runs. Never invented (PLAN.md).
 
 - **Runs:** every test run of `happy-10` from baseline v1 to A/B 02 (listed below), found by the hand check of A/B 02
 - **Model / variant:** Gemini `gemini-3.5-flash-lite`; `baseline`, `policy-before-handoff`, `state-tool-outcome`

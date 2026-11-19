@@ -206,7 +206,7 @@ export class OpenAIChatModel implements ModelClient {
         continue;
       }
       if (res.status === 401 || res.status === 403) {
-        throw new ProviderError(`${this.provider} rejected the API key (HTTP ${res.status}). Check the key in relay/.env.`);
+        throw new ProviderError(`${this.provider} rejected the API key (HTTP ${res.status}). Check the key in .env.`);
       }
       if (!res.ok) {
         // Provider-side errors (e.g. Gemini "500 Internal error") are usually transient:

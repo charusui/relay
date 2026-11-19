@@ -390,7 +390,7 @@ export class ShopifyStore implements StoreAdapter {
 /** The store to use outside evals: Shopify when asked for and configured, otherwise the mock. */
 export function shopifyConfigFromEnv(): ShopifyConfig {
   const shopDomain = process.env.SHOPIFY_STORE_DOMAIN?.trim();
-  if (!shopDomain) throw new Error('SHOPIFY_STORE_DOMAIN is not set in relay/.env (e.g. your-store.myshopify.com).');
+  if (!shopDomain) throw new Error('SHOPIFY_STORE_DOMAIN is not set in .env (e.g. your-store.myshopify.com).');
   return {
     shopDomain,
     clientId: process.env.SHOPIFY_CLIENT_ID?.trim() || undefined,

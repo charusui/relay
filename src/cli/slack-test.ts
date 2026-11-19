@@ -1,4 +1,4 @@
-// Send one example hand-off alert to the Slack webhook in relay/.env, to check
+// Send one example hand-off alert to the Slack webhook in .env, to check
 // the link works. Uses a made-up conversation; no customer data.
 //
 //   npm run slack-test
@@ -9,7 +9,7 @@ import { slackEscalationAlert } from '../alerts/slack.ts';
 loadEnv();
 const url = process.env.SLACK_WEBHOOK_URL?.trim();
 if (!url) {
-  console.error('SLACK_WEBHOOK_URL is not set in relay/.env.');
+  console.error('SLACK_WEBHOOK_URL is not set in .env.');
   process.exit(1);
 }
 try {

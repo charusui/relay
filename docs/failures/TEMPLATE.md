@@ -1,6 +1,6 @@
 # Failure NN: <short name>
 
-Written from a real failed eval run. Never invented (PLAN.md, portfolio/METRICS.md).
+Written from a real failed eval run. Never invented (PLAN.md).
 
 - **Run:** `reports/<runId>.md`, case `<case id>`
 - **Model / variant:** <provider:model>, <variant>

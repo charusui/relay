@@ -169,7 +169,7 @@ export function renderReport(meta: RunMeta, results: CaseResult[]): string {
   out.push('- [ ] Read every failure above and marked any that are grader mistakes');
   out.push('- [ ] Read at least 5 passing conversations to confirm they really pass');
   out.push('- [ ] Grader mistakes fixed in code or in a case (log it in PLAN.md change log), and the run repeated');
-  out.push('\nOnly a complete, non-simulated run on the **test** split, with this check done, may feed the portfolio (see portfolio/METRICS.md).');
+  out.push('\nOnly a complete, non-simulated run on the **test** split, with this check done, may be reported as a result (PLAN.md: never invent metrics).');
   return out.join('\n');
 }
 

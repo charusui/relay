@@ -2,7 +2,7 @@
 //
 // Run with tsx, each module knows its own location (import.meta.url). Inside a
 // Next.js bundle it does not: modules are moved into .next/, so fall back to
-// the project folder (process.cwd(), which is relay/ in dev and on Vercel).
+// the project folder (process.cwd(), the project root in dev and on Vercel).
 // RELAY_ROOT overrides both.
 
 import { existsSync } from 'node:fs';
@@ -22,6 +22,6 @@ function findRoot(): string {
 
 export const RELAY_ROOT = findRoot();
 
-/** Absolute path to a file under the relay/ folder. */
+/** Absolute path to a file under the project root. */
 // The ignore comment stops the bundler tracing the whole folder; next.config.ts lists the files these paths need.
 export const fromRoot = (...parts: string[]) => path.join(/*turbopackIgnore: true*/ RELAY_ROOT, ...parts);
