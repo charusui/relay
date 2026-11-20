@@ -33,7 +33,7 @@ test('eval-results.json experiments and failures point at real write-ups', () =>
   for (const e of data.experiments) assert.ok(existsSync(e.doc), e.doc);
   for (const f of data.failures) {
     assert.ok(existsSync(f.doc), f.doc);
-    const title = readFileSync(f.doc, 'utf8').split('\n')[0];
+    const title = readFileSync(f.doc, 'utf8').split('\n')[0].replace(/\r$/, '');
     assert.equal(title, `# Failure ${f.id}: ${f.title}`);
   }
 });
