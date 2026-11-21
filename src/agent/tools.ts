@@ -134,7 +134,11 @@ export const toolDefinitions: Anthropic.Tool[] = [
       type: 'object',
       properties: {
         reason: { type: 'string', enum: [...ESCALATION_REASONS] },
-        summary: { type: 'string', description: 'Who the customer is, what they want, what you checked, and what is still needed.' },
+        summary: {
+          type: 'string',
+          description:
+            'A short note for the support teammate who takes over, in plain English, as a colleague would write it: who the customer is, what they want, what you checked, and what is still needed. Do not mention reason codes, tool names or yourself (not "I must escalate").',
+        },
       },
       required: ['reason', 'summary'],
       additionalProperties: false,

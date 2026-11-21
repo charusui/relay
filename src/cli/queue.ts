@@ -5,6 +5,7 @@
 
 import { parseArgs } from 'node:util';
 import { RelayDb } from '../db/db.ts';
+import { cleanHandoffSummary } from '../agent/handoff-summary.ts';
 
 const { values } = parseArgs({ options: { evals: { type: 'boolean', default: false }, show: { type: 'string' } } });
 const db = await RelayDb.open();
@@ -17,7 +18,7 @@ if (values.show) {
   for (const e of rows) {
     console.log(`\n${e.id}  ${e.reason}  (raised by ${e.source})  ${new Date(e.created_at).toISOString()}`);
     console.log(`  ${e.channel} ${e.contact}   conversation ${e.conversation_id}`);
-    console.log(`  ${e.summary}`);
+    console.log(`  ${cleanHandoffSummary(e.summary)}`);
   }
 }
 await db.close();

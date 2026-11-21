@@ -4,6 +4,7 @@
 //
 //   load thread -> run agent loop -> escalation check -> log everything -> reply
 
+import { cleanHandoffSummary } from './agent/handoff-summary.ts';
 import { appendCustomerMessage, runAgent, type ToolCallRecord } from './agent/loop.ts';
 import type { ModelClient } from './agent/model.ts';
 import { paidEquivalentUsd, type TokenUsage, zeroUsage } from './agent/pricing.ts';
@@ -128,7 +129,9 @@ export async function handleInbound(deps: HandlerDeps, msg: InboundMessage): Pro
   const state: ConversationState = conv.state;
   const messages = conv.model_messages;
   let escalation: Escalation | undefined;
-  const escalate = async (reason: EscalationReason, summary: string, source: 'agent' | 'code') => {
+  const escalate = async (reason: EscalationReason, rawSummary: string, source: 'agent' | 'code') => {
+    // A teammate reads this (Slack, dashboard, queue): no reason codes, tool names or "I must escalate".
+    const summary = cleanHandoffSummary(rawSummary);
     const ticketId = await db.createEscalation({ conversationId: conv.id, reason, source, summary });
     state.escalation = { reason, summary, source };
     escalation = { reason, summary, source, ticketId };
@@ -154,13 +157,13 @@ export async function handleInbound(deps: HandlerDeps, msg: InboundMessage): Pro
     if (pending) {
       await escalate(
         'refund_over_threshold',
-        `Return of ${pending.sku} on order #${pending.orderNumber} is eligible but the refund ($${pending.refundAmount}) is over $${REFUND_APPROVAL_THRESHOLD}, so it needs approval. Customer message: "${msg.text.slice(0, 300)}"`,
+        `Customer wants to return ${pending.sku} from order #${pending.orderNumber}. It is eligible, but the ${pending.refundAmount} refund is over the ${REFUND_APPROVAL_THRESHOLD} approval limit, so a teammate needs to approve it. Their message: "${msg.text.slice(0, 300)}"`,
         'code',
       );
     } else if (signal) {
-      await escalate('angry_customer', `Escalated by rule (${signal}). Customer message: "${msg.text.slice(0, 300)}"`, 'code');
+      await escalate('angry_customer', `${signal[0].toUpperCase()}${signal.slice(1)}, so a teammate should take over. Their message: "${msg.text.slice(0, 300)}"`, 'code');
     } else if (run.abnormal) {
-      await escalate('low_confidence', `Agent loop ended abnormally (${run.abnormal}${run.leak ? `: ${run.leak}` : ''}). Customer message: "${msg.text.slice(0, 300)}"`, 'code');
+      await escalate('low_confidence', `Relay could not finish answering this message, so a teammate should reply. Their message: "${msg.text.slice(0, 300)}"`, 'code');
     }
   }
   if (escalation?.source === 'code') {

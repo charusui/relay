@@ -5,6 +5,7 @@
 // Every count is cast in SQL (::int, ::float8) so node-postgres and PGlite
 // return plain numbers.
 
+import { cleanHandoffSummary } from '../agent/handoff-summary.ts';
 import type { RelayDb, Traffic } from '../db/db.ts';
 
 export const ALL_TRAFFIC: Traffic[] = ['live', 'synthetic', 'demo'];
@@ -252,7 +253,7 @@ export async function conversationDetail(db: RelayDb, id: string): Promise<Conve
       abnormal: t.abnormal,
       tools: tools.rows.filter((x) => n(x.turn_id) === n(t.id)).map((x) => ({ name: x.name, input: x.input, output: x.output, isError: x.is_error, durationMs: n(x.duration_ms) })),
     })),
-    escalations: esc.rows.map((e) => ({ reason: e.reason, source: e.source, summary: e.summary, at: iso(e.created_at) })),
+    escalations: esc.rows.map((e) => ({ reason: e.reason, source: e.source, summary: cleanHandoffSummary(e.summary), at: iso(e.created_at) })),
   };
 }
 
@@ -399,7 +400,7 @@ export async function openHandoffs(db: RelayDb, traffic: Traffic[] = ALL_TRAFFIC
     conversationId: x.conversation_id,
     reason: x.reason,
     source: x.source,
-    summary: x.summary,
+    summary: cleanHandoffSummary(x.summary),
     createdAt: iso(x.created_at),
     waitingMs: n(x.waiting_ms),
     channel: x.channel,

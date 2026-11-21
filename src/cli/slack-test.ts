@@ -13,7 +13,7 @@ if (!url) {
   process.exit(1);
 }
 try {
-  await slackEscalationAlert(url)(
+  await slackEscalationAlert(url, { dashboardUrl: process.env.RELAY_PUBLIC_URL?.trim() || undefined })(
     { reason: 'refund_over_threshold', source: 'agent', ticketId: 'esc_test0001', summary: 'TEST ALERT from `npm run slack-test`. Priya wants to return the Summit Down Jacket from order 1003; eligible, but the $249 refund is over $150 and needs approval.' },
     { conversationId: 'conv_test', channel: 'sms', from: '+15550100103', text: "I'd like to return the down jacket from 1003, too warm" },
   );

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       mode: sendSms ? 'async' : 'sync',
       sendSms,
       traffic,
-      onEscalation: escalationAlertFromEnv(),
+      onEscalation: escalationAlertFromEnv({ dashboardUrl: base }),
       afterMessage: async () => void (await evaluateAlerts(db, notify)),
     },
     params,
