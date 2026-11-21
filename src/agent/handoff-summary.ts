@@ -21,9 +21,16 @@ const TOOL_WORDS: Record<string, string> = {
 };
 
 // A clause where the agent narrates its own hand-off: "so I must escalate with low_confidence",
-// "I will hand this off", "Escalating to a human." Removed up to the end of its sentence.
+// "I will hand this off", "so escalating as required", "Escalating to a human." Removed up to
+// the end of its sentence, together with the joining word in front of it ("so", "and", ...).
 const SELF_HANDOFF =
-  /(?:[,;]\s*|\s+)?(?:\b(?:so|and|therefore|thus|hence)\s+)?\b(?:I(?:'ll| will| must| need to| have to| should| am going to| am)?|we(?:'ll| will| must| need to| should)?)\s+(?:escalat\w*|hand(?:ing)?\s+(?:this|it|the conversation|the customer)?\s*(?:off|over)|pass(?:ing)?\s+(?:this|it)\s+(?:on|to))\b[^.!?]*|\bescalating\b[^.!?]*/gi;
+  /(?:[,;]\s*|\s+)?(?:\b(?:so|and|therefore|thus|hence)\s+)?(?:\b(?:I(?:'ll| will| must| need to| have to| should| am going to| am)?|we(?:'ll| will| must| need to| should)?)\s+(?:escalat\w*|hand(?:ing)?\s+(?:this|it|the conversation|the customer)?\s*(?:off|over)|pass(?:ing)?\s+(?:this|it)\s+(?:on|to))\b|\bescalating\b)[^.!?]*/gi;
+
+// Retrieval jargon a teammate wouldn't use.
+const JARGON: [RegExp, string][] = [[/\bpolicy passages?\b/gi, 'store policy']];
+
+// A joining word left hanging at the end of a sentence once a clause was removed: "..., so."
+const DANGLING = /[,;]?\s*\b(?:so|and|but|or|therefore|thus|hence|because|then)\s*(?=[.!?]|$)/gi;
 
 /** Plain-English version of a hand-off summary, safe to show a teammate. */
 export function cleanHandoffSummary(raw: string): string {
@@ -33,6 +40,8 @@ export function cleanHandoffSummary(raw: string): string {
   s = s.replace(SELF_HANDOFF, '');
   for (const [code, words] of Object.entries(REASON_WORDS)) s = s.replace(new RegExp(`\\b(?:with|as|reason:?)?\\s*${code}\\b`, 'gi'), ` ${words}`);
   for (const [tool, words] of Object.entries(TOOL_WORDS)) s = s.replace(new RegExp(`\\b${tool}(?:\\(\\))?`, 'g'), words);
+  for (const [re, words] of JARGON) s = s.replace(re, words);
+  s = s.replace(DANGLING, '');
   s = s
     .replace(/\(\s+/g, '(')
     .replace(/\s+([,.;:!?)])/g, '$1')

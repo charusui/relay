@@ -23,6 +23,13 @@ test('cleanHandoffSummary removes reason codes, tool names and self-narrated han
     ['Customer asked for a person. I will escalate this.', 'Customer asked for a person.'],
     ['Escalating with reason angry_customer: customer is upset about order #1042.', 'Customer is upset about order #1042.'],
     ['I checked lookupOrder and searchPolicy; nothing about engraving.', 'I checked the order lookup and the store policies; nothing about engraving.'],
+    // The summary from the second demo recording (conv_98a93cbf-79e): left "…gift wrapping, so." before.
+    [
+      'Customer is asking whether we do gift wrapping. No policy passage covers gift wrapping, so escalating as required.',
+      'Customer is asking whether we do gift wrapping. No store policy covers gift wrapping.',
+    ],
+    ['Customer wants a custom engraving and I am handing this off.', 'Customer wants a custom engraving.'],
+    ['Order 1042 is delayed, and', 'Order 1042 is delayed.'],
   ];
   for (const [raw, want] of cases) assert.equal(cleanHandoffSummary(raw), want);
 });
